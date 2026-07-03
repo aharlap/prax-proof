@@ -10,7 +10,7 @@
     "deploy": "pnpm build:snippet && wrangler deploy",
     "test": "pnpm build:snippet && vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.browser.json"
   },
   "dependencies": {
     "hono": "^4.12.27",
