@@ -1,0 +1,9 @@
+name = "prax-proof"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "proof"
+database_id = "placeholder-set-on-first-deploy"
+migrations_dir = "migrations"
