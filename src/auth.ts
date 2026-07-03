@@ -38,9 +38,10 @@ export const keyAuth: MiddlewareHandler<{ Bindings: Env; Variables: { keyId: str
     const creds = parseBasicAuth(c.req.header("Authorization") ?? null);
     if (!creds) return unauthorized(c);
     const key = await new D1Storage(c.env.DB).findKey(creds.user);
-    if (!key) return unauthorized(c);
+    // Hash before the !key check so unknown-key and wrong-secret responses
+    // do equal work (no key-id enumeration via response timing).
     const hash = await sha256Hex(creds.pass);
-    if (!timingSafeEqualStr(hash, key.secretHash)) return unauthorized(c);
+    if (!key || !timingSafeEqualStr(hash, key.secretHash)) return unauthorized(c);
     c.set("keyId", key.id);
     await next();
   };
