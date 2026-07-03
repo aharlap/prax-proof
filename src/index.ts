@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
+import { cors } from "hono/cors";
 import { adminAuth, keyAuth, sha256Hex } from "./auth";
 import type { Env } from "./env";
 import { D1Storage } from "./storage/d1";
@@ -12,6 +13,16 @@ export const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
 type Ctx = { Bindings: Env; Variables: { keyId: string } };
 
 const app = new Hono<Ctx>();
+
+app.use(
+  "/xapi/*",
+  cors({
+    origin: "*",
+    allowMethods: ["POST", "PUT", "GET", "OPTIONS"],
+    allowHeaders: ["Authorization", "Content-Type", "X-Experience-API-Version"],
+    maxAge: 86400,
+  }),
+);
 
 app.get("/xapi/about", (c) => c.json({ version: ["1.0.3"] }));
 
