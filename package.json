@@ -5,9 +5,10 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "test": "vitest run",
+    "build:snippet": "esbuild src/snippet/main.ts --bundle --minify --format=iife --target=es2020 --outfile=src/generated/p.js.txt --log-level=warning",
+    "dev": "pnpm build:snippet && wrangler dev",
+    "deploy": "pnpm build:snippet && wrangler deploy",
+    "test": "pnpm build:snippet && vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
@@ -18,6 +19,7 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.18.0",
     "@cloudflare/workers-types": "^4.20260702.1",
+    "esbuild": "^0.28.1",
     "typescript": "^6.0.3",
     "vitest": "~4.1.9",
     "wrangler": "^4.107.0"

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
+import snippetJs from "./generated/p.js.txt";
 import { cors } from "hono/cors";
 import { adminAuth, keyAuth, sha256Hex } from "./auth";
 import type { Env } from "./env";
@@ -25,6 +26,13 @@ app.use(
 );
 
 app.get("/xapi/about", (c) => c.json({ version: ["1.0.3"] }));
+
+app.get("/p.js", (c) =>
+  c.body(snippetJs, 200, {
+    "Content-Type": "text/javascript; charset=utf-8",
+    "Cache-Control": "public, max-age=300",
+  }),
+);
 
 const requireVersion: MiddlewareHandler<Ctx> = async (c, next) => {
   const v = c.req.header("X-Experience-API-Version");
