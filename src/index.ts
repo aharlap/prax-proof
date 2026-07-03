@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
-import { keyAuth } from "./auth";
+import { adminAuth, keyAuth, sha256Hex } from "./auth";
 import type { Env } from "./env";
 import { D1Storage } from "./storage/d1";
+import { rateLimit } from "./ratelimit";
 import { ingestStatements } from "./xapi/ingest";
 
 export const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
@@ -33,7 +34,7 @@ async function readJson(c: Context<Ctx>): Promise<unknown | undefined> {
   }
 }
 
-app.post("/xapi/statements", requireVersion, keyAuth, async (c) => {
+app.post("/xapi/statements", requireVersion, keyAuth, rateLimit(120), async (c) => {
   const body = await readJson(c);
   if (body === undefined) {
     return c.json({ error: "Request body is not valid JSON.", docs: ERROR_DOCS }, 400);
@@ -43,7 +44,7 @@ app.post("/xapi/statements", requireVersion, keyAuth, async (c) => {
   return c.json(result.ids, 200);
 });
 
-app.put("/xapi/statements", requireVersion, keyAuth, async (c) => {
+app.put("/xapi/statements", requireVersion, keyAuth, rateLimit(120), async (c) => {
   const statementId = c.req.query("statementId");
   if (!statementId) {
     return c.json({ error: "PUT requires a statementId query parameter.", docs: ERROR_DOCS }, 400);
@@ -62,6 +63,19 @@ app.put("/xapi/statements", requireVersion, keyAuth, async (c) => {
   const result = await ingestStatements(new D1Storage(c.env.DB), { ...body, id: statementId });
   if (!result.ok) return c.json({ error: result.error, docs: ERROR_DOCS }, 400);
   return c.body(null, 204);
+});
+
+app.post("/admin/keys", adminAuth, async (c) => {
+  const body = await readJson(c);
+  const label = (body as { label?: unknown } | undefined)?.label;
+  if (typeof label !== "string" || label.length === 0) {
+    return c.json({ error: "A non-empty label string is required.", docs: ERROR_DOCS }, 400);
+  }
+  const id = crypto.randomUUID();
+  const secretBytes = crypto.getRandomValues(new Uint8Array(32));
+  const secret = [...secretBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  await new D1Storage(c.env.DB).createKey(id, await sha256Hex(secret), label);
+  return c.json({ id, secret, label }, 201);
 });
 
 export default app;
