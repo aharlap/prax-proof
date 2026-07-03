@@ -38,6 +38,12 @@ Send a statement with the returned id/secret:
       -H "Content-Type: application/json" \
       -d '{"actor":{"mbox":"mailto:me@example.org"},"verb":{"id":"http://adlnet.gov/expapi/verbs/completed"},"object":{"id":"https://example.org/my-activity"}}'
 
+## Embed in any page
+
+One script tag + four calls (`proof.start/step/answer/finish`) — see
+[docs/embed.md](docs/embed.md). AI builders: point them at your instance's
+`/llms.txt`, which contains paste-ready instructions.
+
 ## Errors
 
 All 4xx responses return `{ "error": "<plain-language reason>", "docs": "..." }`.

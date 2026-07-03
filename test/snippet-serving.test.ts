@@ -18,3 +18,15 @@ describe("GET /p.js", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("GET /llms.txt", () => {
+  it("serves LLM instructions as plain text", async () => {
+    const res = await SELF.fetch("https://proof.test/llms.txt");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
+    const body = await res.text();
+    expect(body).toContain("proof.start()");
+    expect(body).toContain("data-activity");
+    expect(body).toContain("X-Experience-API-Version");
+  });
+});

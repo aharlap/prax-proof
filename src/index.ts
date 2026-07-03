@@ -8,6 +8,7 @@ import type { Env } from "./env";
 import { D1Storage } from "./storage/d1";
 import { rateLimit } from "./ratelimit";
 import { ingestStatements } from "./xapi/ingest";
+import { LLMS_TXT } from "./llms";
 
 export const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
 
@@ -33,6 +34,14 @@ app.get("/p.js", (c) =>
     "Cache-Control": "public, max-age=300",
   }),
 );
+
+app.get("/llms.txt", (c) => {
+  const origin = new URL(c.req.url).origin;
+  return c.body(LLMS_TXT.replaceAll("{{PROOF_ORIGIN}}", origin), 200, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "public, max-age=300",
+  });
+});
 
 const requireVersion: MiddlewareHandler<Ctx> = async (c, next) => {
   const v = c.req.header("X-Experience-API-Version");
