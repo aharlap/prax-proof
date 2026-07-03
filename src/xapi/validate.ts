@@ -9,8 +9,8 @@ const actorSchema = z
   .object({
     objectType: z.literal("Agent").optional(),
     name: z.string().optional(),
-    mbox: z.string().regex(/^mailto:.+@.+/).optional(),
-    mbox_sha1sum: z.string().regex(/^[0-9a-f]{40}$/i).optional(),
+    mbox: z.string().regex(/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/).optional(),
+    mbox_sha1sum: z.string().regex(/^[0-9a-f]{40}$/).optional(),
     openid: iri.optional(),
     account: account.optional(),
   })

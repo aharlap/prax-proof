@@ -59,4 +59,19 @@ describe("parseStatements", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(typeof r.error).toBe("string");
   });
+
+  it("rejects malformed mbox values", () => {
+    for (const mbox of ["mailto:x@", "mailto:@y.com", "mailto:no-at-sign", "x@y.com"]) {
+      const r = parseStatements({ ...valid, actor: { mbox } });
+      expect(r.ok).toBe(false);
+    }
+  });
+
+  it("rejects uppercase mbox_sha1sum hex", () => {
+    const r = parseStatements({
+      ...valid,
+      actor: { mbox_sha1sum: "A9993E364706816ABA3E25717850C26C9CD0D89D" },
+    });
+    expect(r.ok).toBe(false);
+  });
 });
