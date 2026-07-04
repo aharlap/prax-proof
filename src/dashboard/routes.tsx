@@ -98,7 +98,7 @@ dashboardRoutes.get("/activity", async (c) => {
           {perDay.map((d) => (
             <div class="prax-bar">
               <span>{d.day.slice(5)}</span>
-              <div class="fill" style={`width:${Math.round((d.count / maxDay) * 100)}%`}></div>
+              <div class="fill" aria-hidden="true" style={`width:${Math.round((d.count / maxDay) * 100)}%`}></div>
               <span>{String(d.count)}</span>
             </div>
           ))}
