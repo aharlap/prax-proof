@@ -53,4 +53,13 @@ describe("D1Storage", () => {
     expect(got?.verb).toBe("http://adlnet.gov/expapi/verbs/completed");
     expect(got?.scoreScaled).toBe(0.8);
   });
+
+  it("upsertActivity lets a later non-null name correct the stored one", async () => {
+    const s = new D1Storage(env.DB);
+    await s.upsertActivity("https://example.org/act/rename", "Typo'd Titel");
+    await s.upsertActivity("https://example.org/act/rename", "Typo'd Title (fixed)");
+    const r = await env.DB.prepare("SELECT name FROM activities WHERE iri = ?")
+      .bind("https://example.org/act/rename").first<{ name: string }>();
+    expect(r?.name).toBe("Typo'd Title (fixed)");
+  });
 });

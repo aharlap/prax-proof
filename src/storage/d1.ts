@@ -26,7 +26,7 @@ export class D1Storage implements Storage {
     await this.db
       .prepare(
         `INSERT INTO activities (iri, name) VALUES (?, ?)
-         ON CONFLICT(iri) DO UPDATE SET name = COALESCE(activities.name, excluded.name)`,
+         ON CONFLICT(iri) DO UPDATE SET name = COALESCE(excluded.name, activities.name)`,
       )
       .bind(iri, name)
       .run();

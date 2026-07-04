@@ -11,7 +11,7 @@ const V = "http://adlnet.gov/expapi/verbs/";
 const stmt = (actorName: string, verb: string, over: Record<string, unknown> = {}) => ({
   actor: { account: { homePage: "https://proof.test", name: actorName } },
   verb: { id: `${V}${verb}` },
-  object: { id: IRI, definition: { name: { en: "Agg Quiz" } } },
+  object: { id: IRI }, // no definition.name — must not rename the activity (latest-non-null-wins semantics)
   timestamp: "2026-07-01T10:00:00Z",
   ...over,
 });
