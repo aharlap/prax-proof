@@ -9,6 +9,8 @@ import { D1Storage } from "./storage/d1";
 import { rateLimit } from "./ratelimit";
 import { ingestStatements } from "./xapi/ingest";
 import { LLMS_TXT } from "./llms";
+import { DASHBOARD_CSS } from "./dashboard/styles";
+import { dashboardRoutes } from "./dashboard/routes";
 
 export const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
 
@@ -105,5 +107,15 @@ app.post("/admin/keys", adminAuth, async (c) => {
   await new D1Storage(c.env.DB).createKey(id, await sha256Hex(secret), label);
   return c.json({ id, secret, label }, 201);
 });
+
+app.get("/dashboard.css", (c) =>
+  c.body(DASHBOARD_CSS, 200, {
+    "Content-Type": "text/css; charset=utf-8",
+    "Cache-Control": "public, max-age=300",
+  }),
+);
+app.use("/dashboard/*", adminAuth);
+app.use("/dashboard", adminAuth);
+app.route("/dashboard", dashboardRoutes);
 
 export default app;
