@@ -28,5 +28,6 @@ describe("GET /llms.txt", () => {
     expect(body).toContain("proof.start()");
     expect(body).toContain("data-activity");
     expect(body).toContain("X-Experience-API-Version");
+    expect(body).not.toContain("{{PROOF_ORIGIN}}");
   });
 });
