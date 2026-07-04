@@ -23,6 +23,36 @@ export interface StatementRow {
   registration: string | null;
 }
 
+export interface ActivitySummary {
+  iri: string;
+  name: string | null;
+  firstSeen: string;
+  attempts: number;
+  completions: number;
+  lastActivity: string | null;
+}
+
+export interface ActivityStats {
+  attempts: number;
+  completions: number;
+  avgScoreScaled: number | null;
+  durationsSec: number[];
+}
+
+export interface RosterRow {
+  learnerId: string;
+  label: string;
+  completed: boolean;
+  scoreRaw: number | null;
+  scoreMax: number | null;
+  lastSeen: string;
+}
+
+export interface DayCount {
+  day: string;
+  count: number;
+}
+
 export interface Storage {
   createKey(id: string, secretHash: string, label: string): Promise<void>;
   findKey(id: string): Promise<KeyRecord | null>;
@@ -30,4 +60,9 @@ export interface Storage {
   upsertLearner(identity: string, displayName: string | null): Promise<string>;
   insertStatements(rows: StatementRow[]): Promise<string[]>;
   getStatement(id: string): Promise<StatementRow | null>;
+  listActivities(): Promise<ActivitySummary[]>;
+  getActivity(iri: string): Promise<{ iri: string; name: string | null; firstSeen: string } | null>;
+  getActivityStats(iri: string): Promise<ActivityStats>;
+  listRoster(iri: string): Promise<RosterRow[]>;
+  attemptsPerDay(iri: string, days: number): Promise<DayCount[]>;
 }

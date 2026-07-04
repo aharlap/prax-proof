@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
-import type { KeyRecord, StatementRow, Storage } from "./types";
+import type { ActivityStats, ActivitySummary, DayCount, KeyRecord, RosterRow, StatementRow, Storage } from "./types";
 
 export class D1Storage implements Storage {
   constructor(private db: D1Database) {}
+
+  private static readonly CHILD_FILTER =
+    "iri NOT LIKE '%/q/%' AND iri NOT LIKE '%/questions/%' AND iri NOT LIKE '%/steps/%'";
 
   async createKey(id: string, secretHash: string, label: string): Promise<void> {
     await this.db
@@ -23,7 +26,7 @@ export class D1Storage implements Storage {
     await this.db
       .prepare(
         `INSERT INTO activities (iri, name) VALUES (?, ?)
-         ON CONFLICT(iri) DO UPDATE SET name = COALESCE(excluded.name, activities.name)`,
+         ON CONFLICT(iri) DO UPDATE SET name = COALESCE(activities.name, excluded.name)`,
       )
       .bind(iri, name)
       .run();
@@ -93,5 +96,101 @@ export class D1Storage implements Storage {
       stored: r.stored as string,
       registration: r.registration as string | null,
     };
+  }
+
+  async listActivities(): Promise<ActivitySummary[]> {
+    const V = "http://adlnet.gov/expapi/verbs/initialized";
+    const { results } = await this.db
+      .prepare(
+        `SELECT a.iri, a.name, a.first_seen,
+           (SELECT COUNT(*) FROM statements s WHERE s.activity_iri = a.iri AND s.verb = ?1) AS attempts,
+           (SELECT COUNT(DISTINCT s.learner_id) FROM statements s WHERE s.activity_iri = a.iri AND s.completion = 1) AS completions,
+           (SELECT MAX(s.timestamp) FROM statements s WHERE s.activity_iri = a.iri) AS last_activity
+         FROM activities a
+         WHERE ${D1Storage.CHILD_FILTER}
+         ORDER BY last_activity IS NULL, last_activity DESC`,
+      )
+      .bind(V)
+      .all<Record<string, unknown>>();
+    return results.map((r) => ({
+      iri: r.iri as string,
+      name: r.name as string | null,
+      firstSeen: r.first_seen as string,
+      attempts: r.attempts as number,
+      completions: r.completions as number,
+      lastActivity: r.last_activity as string | null,
+    }));
+  }
+
+  async getActivity(iri: string) {
+    const r = await this.db
+      .prepare("SELECT iri, name, first_seen FROM activities WHERE iri = ?")
+      .bind(iri)
+      .first<{ iri: string; name: string | null; first_seen: string }>();
+    return r ? { iri: r.iri, name: r.name, firstSeen: r.first_seen } : null;
+  }
+
+  async getActivityStats(iri: string): Promise<ActivityStats> {
+    const V = "http://adlnet.gov/expapi/verbs/initialized";
+    const head = await this.db
+      .prepare(
+        `SELECT
+           (SELECT COUNT(*) FROM statements WHERE activity_iri = ?1 AND verb = ?2) AS attempts,
+           (SELECT COUNT(DISTINCT learner_id) FROM statements WHERE activity_iri = ?1 AND completion = 1) AS completions,
+           (SELECT AVG(score_scaled) FROM statements WHERE activity_iri = ?1 AND score_scaled IS NOT NULL) AS avg_scaled`,
+      )
+      .bind(iri, V)
+      .first<{ attempts: number; completions: number; avg_scaled: number | null }>();
+    const { results } = await this.db
+      .prepare(
+        "SELECT duration_sec FROM statements WHERE activity_iri = ?1 AND duration_sec IS NOT NULL ORDER BY duration_sec",
+      )
+      .bind(iri)
+      .all<{ duration_sec: number }>();
+    return {
+      attempts: head?.attempts ?? 0,
+      completions: head?.completions ?? 0,
+      avgScoreScaled: head?.avg_scaled ?? null,
+      durationsSec: results.map((r) => r.duration_sec),
+    };
+  }
+
+  async listRoster(iri: string): Promise<RosterRow[]> {
+    const { results } = await this.db
+      .prepare(
+        `SELECT l.id, COALESCE(l.display_name, l.identity) AS label,
+           MAX(CASE WHEN s.completion = 1 AND s.activity_iri = ?1 THEN 1 ELSE 0 END) AS completed,
+           MAX(CASE WHEN s.activity_iri = ?1 THEN s.score_raw END) AS score_raw,
+           MAX(CASE WHEN s.activity_iri = ?1 THEN s.score_max END) AS score_max,
+           MAX(s.timestamp) AS last_seen
+         FROM statements s JOIN learners l ON l.id = s.learner_id
+         WHERE s.activity_iri = ?1 OR s.activity_iri LIKE ?2
+         GROUP BY l.id, label
+         ORDER BY last_seen DESC`,
+      )
+      .bind(iri, `${iri}/%`)
+      .all<Record<string, unknown>>();
+    return results.map((r) => ({
+      learnerId: r.id as string,
+      label: r.label as string,
+      completed: (r.completed as number) === 1,
+      scoreRaw: r.score_raw as number | null,
+      scoreMax: r.score_max as number | null,
+      lastSeen: r.last_seen as string,
+    }));
+  }
+
+  async attemptsPerDay(iri: string, days: number): Promise<DayCount[]> {
+    const V = "http://adlnet.gov/expapi/verbs/initialized";
+    const { results } = await this.db
+      .prepare(
+        `SELECT substr(timestamp, 1, 10) AS day, COUNT(*) AS count
+         FROM statements
+         WHERE activity_iri = ?1 AND verb = ?2 AND timestamp >= datetime('now', ?3)
+         GROUP BY day ORDER BY day`,
+      )
+      .bind(iri, V, `-${Math.max(1, Math.floor(days))} days`)
+      .all<{ day: string; count: number }>();
+    return results.map((r) => ({ day: r.day, count: r.count }));
   }
 }
