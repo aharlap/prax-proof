@@ -9,7 +9,7 @@ subscription.
 an honest subset of xAPI 1.0.3: the Statements resource only (no document
 APIs, no voiding, no attachments). Statements are portable JSON — when you
 outgrow Proof, export or forward them to a full LRS such as
-[SQL LRS](https://www.sqllrs.com/).
+[lrsql](https://github.com/yetanalytics/lrsql).
 
 ## Status
 
