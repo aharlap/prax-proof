@@ -82,7 +82,7 @@ describe("statement builders", () => {
   it("buildAnswer emits answered with success and response", () => {
     const s = buildAnswer(ctx, "q1", { response: "B", correct: true }) as Record<string, any>;
     expect(s.verb.id).toBe("http://adlnet.gov/expapi/verbs/answered");
-    expect(s.object.id).toBe("https://proof.example/a/fractions-quiz/questions/q1");
+    expect(s.object.id).toBe("https://proof.example/a/fractions-quiz/q/q1");
     expect(s.result).toEqual({ success: true, response: "B" });
   });
 

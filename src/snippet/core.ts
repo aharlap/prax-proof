@@ -80,7 +80,7 @@ function activityObject(ctx: SnippetContext) {
   return { id: ctx.activityIri, definition: { name: { en: ctx.activityName } } };
 }
 
-function childObject(ctx: SnippetContext, kind: "steps" | "questions", id: string) {
+function childObject(ctx: SnippetContext, kind: "steps" | "q", id: string) {
   return { id: `${ctx.activityIri}/${kind}/${encodeURIComponent(id)}` };
 }
 
@@ -97,7 +97,7 @@ export function buildAnswer(
   questionId: string,
   opts?: { response?: string; correct?: boolean },
 ): Record<string, unknown> {
-  const stmt = base(ctx, VERBS.answer, childObject(ctx, "questions", questionId));
+  const stmt = base(ctx, VERBS.answer, childObject(ctx, "q", questionId));
   const result: Record<string, unknown> = {};
   if (opts?.correct !== undefined) result.success = opts.correct;
   if (opts?.response !== undefined) result.response = opts.response;

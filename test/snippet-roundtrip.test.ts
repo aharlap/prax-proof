@@ -52,6 +52,7 @@ describe("snippet → server roundtrip", () => {
     expect(step?.activityIri).toBe(`${ctx.activityIri}/steps/section-2`);
 
     const answer = await s.getStatement(ids[2]);
+    expect(answer?.activityIri).toBe(`${ctx.activityIri}/q/q1`);
     expect(answer?.success).toBe(1);
 
     const finish = await s.getStatement(ids[3]);
