@@ -47,3 +47,46 @@ describe("activity list", () => {
     expect(html).not.toContain("prax-empty");  // empty state replaced by the table
   });
 });
+
+describe("activity detail", () => {
+  it("renders stats, roster, and chart for a tracked activity", async () => {
+    const res = await SELF.fetch(
+      `https://proof.test/dashboard/activity?iri=${encodeURIComponent(LIST_IRI)}`,
+      { headers: ADMIN },
+    );
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Fractions check");
+    expect(html).toContain("Attempts");
+    expect(html).toContain("80%");        // avg scaled 0.8
+    expect(html).toContain("5 min");      // median duration 312s
+    expect(html).toContain("Lea R.");
+    expect(html).toContain("8 / 10");
+    expect(html).toContain("Completed");
+  });
+
+  it("400s without iri and 404s on unknown iri", async () => {
+    expect((await SELF.fetch("https://proof.test/dashboard/activity", { headers: ADMIN })).status).toBe(400);
+    expect(
+      (await SELF.fetch(
+        `https://proof.test/dashboard/activity?iri=${encodeURIComponent("https://example.org/ghost")}`,
+        { headers: ADMIN },
+      )).status,
+    ).toBe(404);
+  });
+
+  it("escapes hostile learner names", async () => {
+    await ingestStatements(new D1Storage(env.DB), [{
+      actor: { mbox: "mailto:xss@example.org", name: "<script>alert(1)</script>" },
+      verb: { id: "http://adlnet.gov/expapi/verbs/initialized" },
+      object: { id: LIST_IRI },
+    }]);
+    const res = await SELF.fetch(
+      `https://proof.test/dashboard/activity?iri=${encodeURIComponent(LIST_IRI)}`,
+      { headers: ADMIN },
+    );
+    const html = await res.text();
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+});
