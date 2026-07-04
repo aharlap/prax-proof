@@ -39,7 +39,7 @@ describe("storage aggregates", () => {
     expect(iris).toContain(IRI);
     expect(iris.some((i) => i.includes("/q/") || i.includes("/steps/"))).toBe(false);
     const agg = all.find((a) => a.iri === IRI)!;
-    expect(agg.name).toBe("Fractions check"); // first non-null name wins (bridge session named it)
+    expect(agg.name).toBe("Fractions check"); // bridge session named it; later statements carry no name, so latest-non-null-wins leaves it unchanged
     expect(agg.attempts).toBe(2);             // two initialized
     expect(agg.completions).toBe(1);          // learner A only
   });
