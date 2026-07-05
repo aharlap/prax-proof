@@ -55,6 +55,12 @@ export interface DayCount {
   count: number;
 }
 
+export interface FunnelStep {
+  step: string;
+  learners: number;
+  firstSeen: string;
+}
+
 export interface Storage {
   createKey(id: string, secretHash: string, label: string): Promise<void>;
   findKey(id: string): Promise<KeyRecord | null>;
@@ -67,4 +73,6 @@ export interface Storage {
   getActivityStats(iri: string): Promise<ActivityStats>;
   listRoster(iri: string): Promise<RosterRow[]>;
   attemptsPerDay(iri: string, days: number): Promise<DayCount[]>;
+  stepFunnel(iri: string): Promise<FunnelStep[]>;
+  startedLearners(iri: string): Promise<number>;
 }

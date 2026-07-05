@@ -2,6 +2,7 @@
 import { Hono } from "hono";
 import type { Env } from "../env";
 import { D1Storage } from "../storage/d1";
+import type { FunnelStep } from "../storage/types";
 import { Layout, StatCard } from "./ui";
 
 type Ctx = { Bindings: Env };
@@ -18,6 +19,44 @@ function formatDuration(sec: number | null): string {
   if (sec === null) return "—";
   if (sec < 30) return "<1 min";
   return `${Math.max(1, Math.round(sec / 60))} min`;
+}
+
+function FunnelSection(props: {
+  started: number;
+  finished: number;
+  steps: FunnelStep[];
+}) {
+  const rows = [
+    { label: "Started", learners: props.started },
+    ...props.steps.map((s) => ({ label: s.step, learners: s.learners })),
+    { label: "Finished", learners: props.finished },
+  ];
+  const max = Math.max(1, ...rows.map((r) => r.learners));
+  let biggestIdx = -1;
+  let biggestDrop = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const drop = rows[i - 1].learners - rows[i].learners;
+    if (drop > biggestDrop) {
+      biggestDrop = drop;
+      biggestIdx = i;
+    }
+  }
+  return (
+    <>
+      <h2>Drop-off funnel</h2>
+      <div class="prax-bars">
+        {rows.map((r, i) => (
+          <div class="prax-bar">
+            <span>{r.label}</span>
+            <div class="fill" aria-hidden="true" style={`width:${Math.round((r.learners / max) * 100)}%`}></div>
+            <span>
+              {String(r.learners)} {i === biggestIdx ? "▼ biggest drop-off" : ""}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 }
 
 dashboardRoutes.get("/", async (c) => {
@@ -72,10 +111,12 @@ dashboardRoutes.get("/activity", async (c) => {
       404,
     );
   }
-  const [stats, roster, perDay] = await Promise.all([
+  const [stats, roster, perDay, funnel, started] = await Promise.all([
     s.getActivityStats(iri),
     s.listRoster(iri),
     s.attemptsPerDay(iri, 30),
+    s.stepFunnel(iri),
+    s.startedLearners(iri),
   ]);
   const maxDay = Math.max(1, ...perDay.map((d) => d.count));
   const avgPct = stats.avgScoreScaled === null ? "—" : `${Math.round(stats.avgScoreScaled * 100)}%`;
@@ -103,6 +144,15 @@ dashboardRoutes.get("/activity", async (c) => {
             </div>
           ))}
         </div>
+      )}
+
+      {funnel.length > 0 ? (
+        <FunnelSection started={started} finished={stats.completions} steps={funnel} />
+      ) : (
+        <>
+          <h2>Drop-off funnel</h2>
+          <p class="prax-empty">No step data yet — call proof.step(...) or send progressed statements.</p>
+        </>
       )}
 
       <h2>Learners</h2>

@@ -51,7 +51,7 @@ td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--prax-color-line); }
 .prax-badge.done { background: var(--prax-color-accent-soft); color: var(--prax-color-accent); }
 .prax-badge.open { background: var(--prax-color-warn-soft); color: var(--prax-color-warn); }
 .prax-bars { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
-.prax-bar { display: grid; grid-template-columns: 7rem 1fr 3.5rem; gap: 0.75rem; align-items: center; font-size: 0.85rem; }
+.prax-bar { display: grid; grid-template-columns: 7rem 1fr auto; gap: 0.75rem; align-items: center; font-size: 0.85rem; }
 .prax-bar .fill { background: var(--prax-color-accent); height: 1rem; border-radius: 3px; min-width: 2px; }
 .prax-empty { background: var(--prax-color-surface); border: 1px dashed var(--prax-color-line);
   border-radius: var(--prax-radius); padding: 2rem; text-align: center; color: var(--prax-color-ink-soft); }

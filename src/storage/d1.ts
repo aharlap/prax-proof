@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import type { ActivityStats, ActivitySummary, DayCount, KeyRecord, RosterRow, StatementRow, Storage } from "./types";
+import type { ActivityStats, ActivitySummary, DayCount, FunnelStep, KeyRecord, RosterRow, StatementRow, Storage } from "./types";
 
 export function likePrefix(iri: string): string {
   return iri.replace(/[\\%_]/g, (ch) => `\\${ch}`) + "/%";
@@ -201,5 +201,29 @@ export class D1Storage implements Storage {
       .bind(iri, V, `-${Math.max(1, Math.floor(days))} days`)
       .all<{ day: string; count: number }>();
     return results.map((r) => ({ day: r.day, count: r.count }));
+  }
+
+  async stepFunnel(iri: string): Promise<FunnelStep[]> {
+    const { results } = await this.db
+      .prepare(
+        `SELECT step, COUNT(DISTINCT learner_id) AS learners, MIN(timestamp) AS first_seen
+         FROM statements
+         WHERE (activity_iri = ?1 OR activity_iri LIKE ?2 ESCAPE '\\') AND step IS NOT NULL
+         GROUP BY step ORDER BY first_seen`,
+      )
+      .bind(iri, likePrefix(iri))
+      .all<{ step: string; learners: number; first_seen: string }>();
+    return results.map((r) => ({ step: r.step, learners: r.learners, firstSeen: r.first_seen }));
+  }
+
+  async startedLearners(iri: string): Promise<number> {
+    const r = await this.db
+      .prepare(
+        `SELECT COUNT(DISTINCT learner_id) AS n FROM statements
+         WHERE activity_iri = ?1 AND verb = 'http://adlnet.gov/expapi/verbs/initialized'`,
+      )
+      .bind(iri)
+      .first<{ n: number }>();
+    return r?.n ?? 0;
   }
 }

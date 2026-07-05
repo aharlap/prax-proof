@@ -4,8 +4,7 @@ import { describe, expect, it } from "vitest";
 import { D1Storage } from "../src/storage/d1";
 import { ingestStatements } from "../src/xapi/ingest";
 import { bridgeSession } from "./fixtures/bridge-session";
-
-export const ADMIN = { Authorization: "Basic " + btoa("admin:test-admin-pw") };
+import { ADMIN } from "./helpers";
 
 describe("dashboard shell", () => {
   it("requires admin auth", async () => {
