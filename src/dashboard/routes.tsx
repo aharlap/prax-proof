@@ -195,7 +195,6 @@ dashboardRoutes.get("/activity", async (c) => {
         </>
       )}
 
-
       <h2>Learners</h2>
       {roster.length === 0 ? (
         <p class="prax-empty">No learners yet.</p>
