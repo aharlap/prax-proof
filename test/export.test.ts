@@ -21,6 +21,14 @@ describe("csvCell", () => {
       expect(csvCell(v).startsWith('"\'')).toBe(true);
     }
   });
+  it("guards formula injection even with leading whitespace", () => {
+    expect(csvCell(" =1+1").startsWith('"\''), '" =1+1" not guarded').toBe(true);
+    expect(csvCell("\t=SUM(A1)").startsWith('"\''), '"\\t=SUM(A1)" not guarded').toBe(true);
+  });
+  it("does not guard benign leading-whitespace values", () => {
+    const out = csvCell(" hello");
+    expect(out.startsWith("\"'")).toBe(false);
+  });
   it("renders null as empty", () => expect(csvCell(null)).toBe(""));
 });
 

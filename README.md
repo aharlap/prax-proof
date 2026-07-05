@@ -13,9 +13,12 @@ outgrow Proof, export or forward them to a full LRS such as
 
 ## Status
 
-Milestone 1: xAPI statement ingest on Cloudflare Workers + D1.
-Snippet, dashboard, and one-click deploy are on the roadmap
-(see `docs/` in the workspace).
+Milestones 1–3 are complete: xAPI statement ingest, the `p.js` snippet with
+identity modes, and the teacher dashboard (activities, drop-off funnel,
+learner timelines, key management, CSV/JSON export) — held to zero axe
+violations by a Playwright + axe-core gate (`pnpm test:a11y`). Milestone 4
+(one-click Deploy to Cloudflare + docs) is next; see the repo issues for the
+tracked backlog.
 
 ## Quickstart (local)
 

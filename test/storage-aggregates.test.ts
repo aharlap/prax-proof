@@ -79,4 +79,38 @@ describe("storage aggregates", () => {
     expect((await s.getActivity(IRI))?.iri).toBe(IRI);
     expect(await s.getActivity("https://example.org/nope")).toBeNull();
   });
+
+  it("listRoster picks score_raw and score_max from the same (latest) scored statement", async () => {
+    // Use a fresh IRI so there is no interference from beforeAll data.
+    const SCORE_IRI = "https://example.org/x/same-row-scores";
+    const s = new D1Storage(env.DB);
+
+    // Attempt 1 (earlier): 2/10
+    await ingestStatements(s, [
+      {
+        actor: { account: { homePage: "https://proof.test", name: "score-learner-x" } },
+        verb: { id: `${V}passed` },
+        object: { id: SCORE_IRI },
+        result: { score: { raw: 2, max: 10 } },
+        timestamp: "2026-06-01T10:00:00Z",
+      },
+    ]);
+
+    // Attempt 2 (later): 8/8
+    await ingestStatements(s, [
+      {
+        actor: { account: { homePage: "https://proof.test", name: "score-learner-x" } },
+        verb: { id: `${V}passed` },
+        object: { id: SCORE_IRI },
+        result: { score: { raw: 8, max: 8 } },
+        timestamp: "2026-06-02T10:00:00Z",
+      },
+    ]);
+
+    const roster = await s.listRoster(SCORE_IRI);
+    expect(roster).toHaveLength(1);
+    // Both values must come from the same (latest) statement: 8/8, not a mix of 8/10.
+    expect(roster[0].scoreRaw).toBe(8);
+    expect(roster[0].scoreMax).toBe(8);
+  });
 });

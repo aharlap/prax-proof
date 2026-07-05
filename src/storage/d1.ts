@@ -176,8 +176,12 @@ export class D1Storage implements Storage {
       .prepare(
         `SELECT l.id, COALESCE(l.display_name, l.identity) AS label,
            MAX(CASE WHEN s.completion = 1 AND s.activity_iri = ?1 THEN 1 ELSE 0 END) AS completed,
-           MAX(CASE WHEN s.activity_iri = ?1 THEN s.score_raw END) AS score_raw,
-           MAX(CASE WHEN s.activity_iri = ?1 THEN s.score_max END) AS score_max,
+           (SELECT s2.score_raw FROM statements s2
+              WHERE s2.learner_id = l.id AND s2.activity_iri = ?1 AND s2.score_raw IS NOT NULL
+              ORDER BY s2.timestamp DESC, s2.stored DESC LIMIT 1) AS score_raw,
+           (SELECT s2.score_max FROM statements s2
+              WHERE s2.learner_id = l.id AND s2.activity_iri = ?1 AND s2.score_raw IS NOT NULL
+              ORDER BY s2.timestamp DESC, s2.stored DESC LIMIT 1) AS score_max,
            MAX(s.timestamp) AS last_seen
          FROM statements s JOIN learners l ON l.id = s.learner_id
          WHERE s.activity_iri = ?1 OR s.activity_iri LIKE ?2 ESCAPE '\\'
