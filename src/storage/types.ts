@@ -77,6 +77,7 @@ export interface TimelineRow {
 export interface Storage {
   createKey(id: string, secretHash: string, label: string): Promise<void>;
   findKey(id: string): Promise<KeyRecord | null>;
+  listKeys(): Promise<{ id: string; label: string; createdAt: string }[]>;
   upsertActivity(iri: string, name: string | null): Promise<void>;
   upsertLearner(identity: string, displayName: string | null): Promise<string>;
   insertStatements(rows: StatementRow[]): Promise<string[]>;
@@ -90,4 +91,5 @@ export interface Storage {
   startedLearners(iri: string): Promise<number>;
   getLearner(learnerId: string): Promise<{ id: string; label: string } | null>;
   learnerTimeline(iri: string, learnerId: string): Promise<TimelineRow[]>;
+  rawStatements(iri: string): Promise<string[]>;
 }

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 import { Hono } from "hono";
+import { sha256Hex } from "../auth";
 import type { Env } from "../env";
 import { D1Storage } from "../storage/d1";
 import type { FunnelStep, TimelineRow } from "../storage/types";
+import { toCsv } from "./csv";
 import { Layout, StatCard } from "./ui";
 
 type Ctx = { Bindings: Env };
@@ -155,7 +157,13 @@ dashboardRoutes.get("/activity", async (c) => {
   return c.html(
     <Layout title={activity.name ?? activity.iri}>
       <h1>{activity.name ?? activity.iri}</h1>
-      <p><a href="/dashboard">← All activities</a></p>
+      <p>
+        <a href="/dashboard">← All activities</a>
+        {" · "}
+        <a href={`/dashboard/activity.csv?iri=${encodeURIComponent(iri)}`}>Download CSV</a>
+        {" · "}
+        <a href={`/dashboard/activity.json?iri=${encodeURIComponent(iri)}`}>Download JSON</a>
+      </p>
       <div class="prax-stats">
         <StatCard label="Attempts" value={String(stats.attempts)} />
         <StatCard label="Completed" value={String(stats.completions)} />
@@ -226,6 +234,104 @@ dashboardRoutes.get("/activity", async (c) => {
       )}
     </Layout>,
   );
+});
+
+function KeysPage(props: {
+  keys: { id: string; label: string; createdAt: string }[];
+  minted?: { id: string; secret: string; label: string };
+  origin: string;
+}) {
+  return (
+    <Layout title="Keys">
+      <h1>Ingest keys</h1>
+      {props.minted ? (
+        <div class="prax-stat">
+          <p>
+            <strong>Key created.</strong> Copy the secret now — it is shown only once.
+          </p>
+          <p>id: <code>{props.minted.id}</code></p>
+          <p>secret: <code>{props.minted.secret}</code></p>
+          <p>Embed sample:</p>
+          <pre>
+            <code>{`<script src="${props.origin}/p.js"\n        data-activity="my-activity"\n        data-key="${props.minted.id}:${props.minted.secret}"\n        data-identity="ask"></script>`}</code>
+          </pre>
+        </div>
+      ) : null}
+      <form method="post" action="/dashboard/keys">
+        <label for="label">Label for the new key</label>{" "}
+        <input id="label" name="label" required maxlength={80} />{" "}
+        <button type="submit">Create key</button>
+      </form>
+      {props.keys.length === 0 ? (
+        <p class="prax-empty">No keys yet.</p>
+      ) : (
+        <table>
+          <caption>Existing keys (secrets are never shown again)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Label</th>
+              <th scope="col">Key id</th>
+              <th scope="col">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.keys.map((k) => (
+              <tr>
+                <td>{k.label}</td>
+                <td><code>{k.id}</code></td>
+                <td>{k.createdAt.slice(0, 10)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Layout>
+  );
+}
+
+dashboardRoutes.get("/keys", async (c) => {
+  const keys = await new D1Storage(c.env.DB).listKeys();
+  return c.html(<KeysPage keys={keys} origin={new URL(c.req.url).origin} />);
+});
+
+dashboardRoutes.post("/keys", async (c) => {
+  const origin = new URL(c.req.url).origin;
+  const reqOrigin = c.req.header("Origin");
+  if (reqOrigin && reqOrigin !== origin) return c.text("Cross-origin form submission rejected", 403);
+  const form = await c.req.parseBody();
+  const label = typeof form.label === "string" ? form.label.trim() : "";
+  if (!label) return c.text("A non-empty label is required", 400);
+  const s = new D1Storage(c.env.DB);
+  const id = crypto.randomUUID();
+  const secretBytes = crypto.getRandomValues(new Uint8Array(32));
+  const secret = [...secretBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  await s.createKey(id, await sha256Hex(secret), label);
+  const keys = await s.listKeys();
+  return c.html(<KeysPage keys={keys} minted={{ id, secret, label }} origin={origin} />);
+});
+
+dashboardRoutes.get("/activity.csv", async (c) => {
+  const iri = c.req.query("iri");
+  if (!iri) return c.text("Missing iri parameter", 400);
+  const roster = await new D1Storage(c.env.DB).listRoster(iri);
+  const rows: (string | number | null)[][] = [
+    ["label", "status", "score_raw", "score_max", "last_seen"],
+    ...roster.map((r) => [r.label, r.completed ? "completed" : "in-progress", r.scoreRaw, r.scoreMax, r.lastSeen]),
+  ];
+  return c.body(toCsv(rows), 200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": 'attachment; filename="proof-roster.csv"',
+  });
+});
+
+dashboardRoutes.get("/activity.json", async (c) => {
+  const iri = c.req.query("iri");
+  if (!iri) return c.text("Missing iri parameter", 400);
+  const raws = await new D1Storage(c.env.DB).rawStatements(iri);
+  return c.body(`[${raws.join(",")}]`, 200, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Content-Disposition": 'attachment; filename="proof-statements.json"',
+  });
 });
 
 dashboardRoutes.get("/learner", async (c) => {

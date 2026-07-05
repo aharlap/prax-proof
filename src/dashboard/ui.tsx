@@ -13,7 +13,7 @@ export function Layout(props: PropsWithChildren<{ title: string }>) {
       <body>
         <a class="prax-skip" href="#main">Skip to content</a>
         <header class="prax-top">
-          <strong>Proof</strong> — <a href="/dashboard">Activities</a>
+          <strong>Proof</strong> — <a href="/dashboard">Activities</a> · <a href="/dashboard/keys">Keys</a>
         </header>
         <main id="main">{props.children}</main>
       </body>

@@ -18,6 +18,13 @@ export class D1Storage implements Storage {
       .run();
   }
 
+  async listKeys(): Promise<{ id: string; label: string; createdAt: string }[]> {
+    const { results } = await this.db
+      .prepare("SELECT id, label, created_at FROM keys ORDER BY created_at DESC")
+      .all<{ id: string; label: string; created_at: string }>();
+    return results.map((r) => ({ id: r.id, label: r.label, createdAt: r.created_at }));
+  }
+
   async findKey(id: string): Promise<KeyRecord | null> {
     const r = await this.db
       .prepare("SELECT id, secret_hash, label FROM keys WHERE id = ?")
@@ -233,6 +240,17 @@ export class D1Storage implements Storage {
       .bind(learnerId)
       .first<{ id: string; label: string }>();
     return r ?? null;
+  }
+
+  async rawStatements(iri: string): Promise<string[]> {
+    const { results } = await this.db
+      .prepare(
+        `SELECT raw FROM statements WHERE activity_iri = ?1 OR activity_iri LIKE ?2 ESCAPE '\\'
+         ORDER BY timestamp ASC`,
+      )
+      .bind(iri, likePrefix(iri))
+      .all<{ raw: string }>();
+    return results.map((r) => r.raw);
   }
 
   async learnerTimeline(iri: string, learnerId: string): Promise<TimelineRow[]> {
