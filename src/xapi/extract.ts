@@ -44,6 +44,25 @@ export function activityName(stmt: ValidStatement): string | null {
   return names.en ?? Object.values(names)[0] ?? null;
 }
 
+const STEP_EXT = "https://praxity.io/xapi/ext/step";
+const STEP_IRI_RE = /\/steps\/([^/]+)$/;
+
+export function extractStep(stmt: ValidStatement): string | null {
+  const objectId = (stmt.object as { id?: unknown }).id;
+  if (typeof objectId === "string") {
+    const m = STEP_IRI_RE.exec(objectId);
+    if (m) {
+      try {
+        return decodeURIComponent(m[1]);
+      } catch {
+        return m[1];
+      }
+    }
+  }
+  const ext = (stmt.result as { extensions?: Record<string, unknown> } | undefined)?.extensions?.[STEP_EXT];
+  return typeof ext === "string" ? ext : null;
+}
+
 export function extractColumns(
   stmt: ValidStatement,
   id: string,
@@ -51,6 +70,7 @@ export function extractColumns(
 ): Omit<StatementRow, "learnerId" | "raw"> {
   const score = stmt.result?.score;
   const bool = (v: boolean | undefined): number | null => (v === undefined ? null : v ? 1 : 0);
+  const responseVal = (stmt.result as { response?: unknown } | undefined)?.response;
   return {
     id,
     verb: stmt.verb.id,
@@ -65,5 +85,7 @@ export function extractColumns(
     timestamp: stmt.timestamp ?? stored,
     stored,
     registration: stmt.context?.registration ?? null,
+    step: extractStep(stmt),
+    response: typeof responseVal === "string" ? responseVal : null,
   };
 }

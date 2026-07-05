@@ -21,6 +21,8 @@ export interface StatementRow {
   timestamp: string;          // ISO 8601
   stored: string;             // ISO 8601
   registration: string | null;
+  step: string | null;
+  response: string | null;
 }
 
 export interface ActivitySummary {

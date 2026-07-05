@@ -52,6 +52,8 @@ describe("extractColumns", () => {
       timestamp: "2026-07-02T10:00:00Z",
       stored: "2026-07-02T10:00:01.000Z",
       registration: null,
+      step: null,
+      response: null,
     });
   });
   it("uses stored time as timestamp when statement has none, null activity for StatementRef", () => {

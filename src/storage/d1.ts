@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 import type { ActivityStats, ActivitySummary, DayCount, KeyRecord, RosterRow, StatementRow, Storage } from "./types";
 
+export function likePrefix(iri: string): string {
+  return iri.replace(/[\\%_]/g, (ch) => `\\${ch}`) + "/%";
+}
+
 export class D1Storage implements Storage {
   constructor(private db: D1Database) {}
 
@@ -52,8 +56,9 @@ export class D1Storage implements Storage {
       `INSERT INTO statements
          (id, raw, verb, activity_iri, learner_id,
           score_raw, score_min, score_max, score_scaled,
-          success, completion, duration_sec, timestamp, stored, registration)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          success, completion, duration_sec, timestamp, stored, registration,
+          step, response)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO NOTHING`,
     );
     const results = await this.db.batch(
@@ -62,6 +67,7 @@ export class D1Storage implements Storage {
           s.id, s.raw, s.verb, s.activityIri, s.learnerId,
           s.scoreRaw, s.scoreMin, s.scoreMax, s.scoreScaled,
           s.success, s.completion, s.durationSec, s.timestamp, s.stored, s.registration,
+          s.step, s.response,
         ),
       ),
     );
@@ -73,7 +79,8 @@ export class D1Storage implements Storage {
       .prepare(
         `SELECT id, raw, verb, activity_iri, learner_id,
                 score_raw, score_min, score_max, score_scaled,
-                success, completion, duration_sec, timestamp, stored, registration
+                success, completion, duration_sec, timestamp, stored, registration,
+                step, response
          FROM statements WHERE id = ?`,
       )
       .bind(id)
@@ -95,6 +102,8 @@ export class D1Storage implements Storage {
       timestamp: r.timestamp as string,
       stored: r.stored as string,
       registration: r.registration as string | null,
+      step: r.step as string | null,
+      response: r.response as string | null,
     };
   }
 
@@ -164,11 +173,11 @@ export class D1Storage implements Storage {
            MAX(CASE WHEN s.activity_iri = ?1 THEN s.score_max END) AS score_max,
            MAX(s.timestamp) AS last_seen
          FROM statements s JOIN learners l ON l.id = s.learner_id
-         WHERE s.activity_iri = ?1 OR s.activity_iri LIKE ?2
+         WHERE s.activity_iri = ?1 OR s.activity_iri LIKE ?2 ESCAPE '\\'
          GROUP BY l.id, label
          ORDER BY last_seen DESC`,
       )
-      .bind(iri, `${iri}/%`)
+      .bind(iri, likePrefix(iri))
       .all<Record<string, unknown>>();
     return results.map((r) => ({
       learnerId: r.id as string,
@@ -186,7 +195,7 @@ export class D1Storage implements Storage {
       .prepare(
         `SELECT substr(timestamp, 1, 10) AS day, COUNT(*) AS count
          FROM statements
-         WHERE activity_iri = ?1 AND verb = ?2 AND timestamp >= datetime('now', ?3)
+         WHERE activity_iri = ?1 AND verb = ?2 AND timestamp >= strftime('%Y-%m-%dT%H:%M:%fZ','now', ?3)
          GROUP BY day ORDER BY day`,
       )
       .bind(iri, V, `-${Math.max(1, Math.floor(days))} days`)

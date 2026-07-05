@@ -15,6 +15,8 @@ const row = (id: string, over: Partial<StatementRow> = {}): StatementRow => ({
   timestamp: "2026-07-02T10:00:00.000Z",
   stored: "2026-07-02T10:00:01.000Z",
   registration: null,
+  step: null,
+  response: null,
   ...over,
 });
 
