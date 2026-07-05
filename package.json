@@ -10,6 +10,7 @@
     "deploy": "pnpm build:snippet && wrangler deploy",
     "test": "pnpm build:snippet && vitest run",
     "test:watch": "vitest",
+    "test:a11y": "pnpm build:snippet && wrangler d1 migrations apply proof --local && playwright test -c playwright.config.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.browser.json"
   },
   "dependencies": {
@@ -17,8 +18,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@cloudflare/vitest-pool-workers": "^0.18.0",
     "@cloudflare/workers-types": "^4.20260702.1",
+    "@playwright/test": "^1.61.1",
     "esbuild": "^0.28.1",
     "typescript": "^6.0.3",
     "vitest": "~4.1.9",

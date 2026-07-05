@@ -12,7 +12,7 @@ import { LLMS_TXT } from "./llms";
 import { DASHBOARD_CSS } from "./dashboard/styles";
 import { dashboardRoutes } from "./dashboard/routes";
 
-export const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
+const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
 
 type Ctx = { Bindings: Env; Variables: { keyId: string } };
 

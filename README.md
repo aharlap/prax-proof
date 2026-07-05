@@ -54,6 +54,7 @@ The version header `X-Experience-API-Version: 1.0.x` is required on
 
     pnpm test        # vitest via @cloudflare/vitest-pool-workers (local D1)
     pnpm typecheck
+    pnpm test:a11y   # Playwright + axe against wrangler dev (zero-violation gate)
 
 ## License
 
