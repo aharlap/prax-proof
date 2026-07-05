@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import type { ActivityStats, ActivitySummary, DayCount, FunnelStep, KeyRecord, RosterRow, StatementRow, Storage } from "./types";
+import type { ActivityStats, ActivitySummary, DayCount, FunnelStep, KeyRecord, RosterRow, StatementRow, Storage, TimelineRow } from "./types";
 
 export function likePrefix(iri: string): string {
   return iri.replace(/[\\%_]/g, (ch) => `\\${ch}`) + "/%";
@@ -225,5 +225,38 @@ export class D1Storage implements Storage {
       .bind(iri)
       .first<{ n: number }>();
     return r?.n ?? 0;
+  }
+
+  async getLearner(learnerId: string) {
+    const r = await this.db
+      .prepare("SELECT id, COALESCE(display_name, identity) AS label FROM learners WHERE id = ?")
+      .bind(learnerId)
+      .first<{ id: string; label: string }>();
+    return r ?? null;
+  }
+
+  async learnerTimeline(iri: string, learnerId: string): Promise<TimelineRow[]> {
+    const { results } = await this.db
+      .prepare(
+        `SELECT timestamp, verb, activity_iri, step, response, success, completion,
+                score_raw, score_max, duration_sec
+         FROM statements
+         WHERE learner_id = ?1 AND (activity_iri = ?2 OR activity_iri LIKE ?3 ESCAPE '\\')
+         ORDER BY timestamp ASC, stored ASC`,
+      )
+      .bind(learnerId, iri, likePrefix(iri))
+      .all<Record<string, unknown>>();
+    return results.map((r) => ({
+      timestamp: r.timestamp as string,
+      verb: r.verb as string,
+      activityIri: r.activity_iri as string | null,
+      step: r.step as string | null,
+      response: r.response as string | null,
+      success: r.success as number | null,
+      completion: r.completion as number | null,
+      scoreRaw: r.score_raw as number | null,
+      scoreMax: r.score_max as number | null,
+      durationSec: r.duration_sec as number | null,
+    }));
   }
 }

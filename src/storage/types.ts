@@ -61,6 +61,19 @@ export interface FunnelStep {
   firstSeen: string;
 }
 
+export interface TimelineRow {
+  timestamp: string;
+  verb: string;
+  activityIri: string | null;
+  step: string | null;
+  response: string | null;
+  success: number | null;
+  completion: number | null;
+  scoreRaw: number | null;
+  scoreMax: number | null;
+  durationSec: number | null;
+}
+
 export interface Storage {
   createKey(id: string, secretHash: string, label: string): Promise<void>;
   findKey(id: string): Promise<KeyRecord | null>;
@@ -75,4 +88,6 @@ export interface Storage {
   attemptsPerDay(iri: string, days: number): Promise<DayCount[]>;
   stepFunnel(iri: string): Promise<FunnelStep[]>;
   startedLearners(iri: string): Promise<number>;
+  getLearner(learnerId: string): Promise<{ id: string; label: string } | null>;
+  learnerTimeline(iri: string, learnerId: string): Promise<TimelineRow[]>;
 }

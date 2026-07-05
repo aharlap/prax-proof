@@ -2,7 +2,7 @@
 import { Hono } from "hono";
 import type { Env } from "../env";
 import { D1Storage } from "../storage/d1";
-import type { FunnelStep } from "../storage/types";
+import type { FunnelStep, TimelineRow } from "../storage/types";
 import { Layout, StatCard } from "./ui";
 
 type Ctx = { Bindings: Env };
@@ -19,6 +19,38 @@ function formatDuration(sec: number | null): string {
   if (sec === null) return "—";
   if (sec < 30) return "<1 min";
   return `${Math.max(1, Math.round(sec / 60))} min`;
+}
+
+const VERB_LABELS: Record<string, string> = {
+  "http://adlnet.gov/expapi/verbs/initialized": "Started",
+  "http://adlnet.gov/expapi/verbs/progressed": "Progressed",
+  "http://adlnet.gov/expapi/verbs/answered": "Answered",
+  "http://adlnet.gov/expapi/verbs/passed": "Passed",
+  "http://adlnet.gov/expapi/verbs/failed": "Failed",
+  "http://adlnet.gov/expapi/verbs/completed": "Completed",
+  "http://adlnet.gov/expapi/verbs/scored": "Scored",
+  "http://adlnet.gov/expapi/verbs/experienced": "Viewed",
+};
+const verbLabel = (iri: string) => VERB_LABELS[iri] ?? iri.split("/").pop() ?? iri;
+
+const Q_IRI_RE = /\/q\/([^/]+)$/;
+function timelineDetail(row: TimelineRow): string {
+  if (row.step) return row.step;
+  const m = row.activityIri ? Q_IRI_RE.exec(row.activityIri) : null;
+  if (m) {
+    try { return decodeURIComponent(m[1]); } catch { return m[1]; }
+  }
+  return "—";
+}
+
+function timelineResult(row: TimelineRow): string {
+  const parts: string[] = [];
+  if (row.response) parts.push(row.response);
+  if (row.success === 1) parts.push("✓ correct");
+  if (row.success === 0) parts.push("✗ incorrect");
+  if (row.scoreRaw !== null) parts.push(`${row.scoreRaw} / ${row.scoreMax ?? "?"}`);
+  if (row.durationSec !== null) parts.push(formatDuration(row.durationSec));
+  return parts.length ? parts.join(" · ") : "—";
 }
 
 function FunnelSection(props: {
@@ -155,6 +187,7 @@ dashboardRoutes.get("/activity", async (c) => {
         </>
       )}
 
+
       <h2>Learners</h2>
       {roster.length === 0 ? (
         <p class="prax-empty">No learners yet.</p>
@@ -172,7 +205,11 @@ dashboardRoutes.get("/activity", async (c) => {
           <tbody>
             {roster.map((r) => (
               <tr>
-                <td>{r.label}</td>
+                <td>
+                  <a href={`/dashboard/learner?id=${encodeURIComponent(r.learnerId)}&iri=${encodeURIComponent(iri)}`}>
+                    {r.label}
+                  </a>
+                </td>
                 <td>
                   {r.completed ? (
                     <span class="prax-badge done">Completed</span>
@@ -182,6 +219,59 @@ dashboardRoutes.get("/activity", async (c) => {
                 </td>
                 <td>{r.scoreRaw !== null ? `${r.scoreRaw} / ${r.scoreMax ?? "?"}` : "—"}</td>
                 <td>{r.lastSeen.slice(0, 10)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Layout>,
+  );
+});
+
+dashboardRoutes.get("/learner", async (c) => {
+  const id = c.req.query("id");
+  const iri = c.req.query("iri");
+  if (!id || !iri) return c.text("Missing id or iri parameter", 400);
+  const s = new D1Storage(c.env.DB);
+  const learner = await s.getLearner(id);
+  if (!learner) {
+    return c.html(
+      <Layout title="Not found">
+        <h1>Learner not found</h1>
+        <p><a href="/dashboard">Back to activities</a></p>
+      </Layout>,
+      404,
+    );
+  }
+  const [activity, timeline] = await Promise.all([s.getActivity(iri), s.learnerTimeline(iri, id)]);
+  return c.html(
+    <Layout title={learner.label}>
+      <h1>{learner.label}</h1>
+      <p>
+        <a href={`/dashboard/activity?iri=${encodeURIComponent(iri)}`}>
+          ← {activity?.name ?? iri}
+        </a>
+      </p>
+      {timeline.length === 0 ? (
+        <p class="prax-empty">No statements for this learner on this activity.</p>
+      ) : (
+        <table>
+          <caption>Attempt timeline, oldest first</caption>
+          <thead>
+            <tr>
+              <th scope="col">When</th>
+              <th scope="col">What</th>
+              <th scope="col">Detail</th>
+              <th scope="col">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {timeline.map((row) => (
+              <tr>
+                <td>{row.timestamp.slice(0, 16).replace("T", " ")}</td>
+                <td>{verbLabel(row.verb)}</td>
+                <td>{timelineDetail(row)}</td>
+                <td>{timelineResult(row)}</td>
               </tr>
             ))}
           </tbody>
