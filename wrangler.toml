@@ -6,5 +6,4 @@ rules = [{ type = "Text", globs = ["**/*.txt"], fallthrough = true }]
 [[d1_databases]]
 binding = "DB"
 database_name = "proof"
-database_id = "placeholder-set-on-first-deploy"
 migrations_dir = "migrations"

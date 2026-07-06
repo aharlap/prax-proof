@@ -37,6 +37,11 @@ async function expectNoViolations(page: import("@playwright/test").Page) {
   expect(results.violations).toEqual([]);
 }
 
+test("landing page has no axe violations", async ({ page }) => {
+  await page.goto("/");
+  await expectNoViolations(page);
+});
+
 test("activity list has no axe violations", async ({ page }) => {
   await page.goto("/dashboard");
   await expectNoViolations(page);

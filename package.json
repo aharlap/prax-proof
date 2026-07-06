@@ -7,7 +7,7 @@
   "scripts": {
     "build:snippet": "esbuild src/snippet/main.ts --bundle --minify --format=iife --target=es2020 --outfile=src/generated/p.js.txt --log-level=warning",
     "dev": "pnpm build:snippet && wrangler dev",
-    "deploy": "pnpm build:snippet && wrangler deploy",
+    "deploy": "pnpm build:snippet && wrangler d1 migrations apply DB --remote && wrangler deploy",
     "test": "pnpm build:snippet && vitest run",
     "test:watch": "vitest",
     "test:a11y": "pnpm build:snippet && wrangler d1 migrations apply proof --local && playwright test -c playwright.config.ts",

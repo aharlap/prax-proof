@@ -1,5 +1,7 @@
 # Proof
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/aharlap/prax-proof)
+
 Plausible, for learning. Proof is a free, open-source (MIT) results tracker
 for learning activities: see who did your activity, whether they finished,
 how they scored, and where they dropped off — without an LMS, without a
@@ -46,6 +48,12 @@ Send a statement with the returned id/secret:
 One script tag + four calls (`proof.start/step/answer/finish`) — see
 [docs/embed.md](docs/embed.md). AI builders: point them at your instance's
 `/llms.txt`, which contains paste-ready instructions.
+
+## Deploy
+
+See [docs/deploy.md](docs/deploy.md). Production instances must set the `ADMIN_PASSWORD` secret:
+
+    wrangler secret put ADMIN_PASSWORD
 
 ## Errors
 
