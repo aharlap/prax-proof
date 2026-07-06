@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { env } from "cloudflare:test";
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { adminAuth, keyAuth, parseBasicAuth, sha256Hex } from "../src/auth";
 import type { Env } from "../src/env";
 import { D1Storage } from "../src/storage/d1";
@@ -64,5 +64,25 @@ describe("adminAuth", () => {
   it("rejects wrong password", async () => {
     const res = await testApp().request("/admin", { headers: { Authorization: basic("admin", "nope") } }, env);
     expect(res.status).toBe(401);
+  });
+
+  it.each([
+    ["empty", ""],
+    ["unset", undefined],
+  ])("rejects when ADMIN_PASSWORD is %s", async (_label, adminPassword) => {
+    const next = vi.fn();
+    const c = {
+      req: { header: () => basic("admin", "undefined") },
+      env: adminPassword === undefined ? {} : { ADMIN_PASSWORD: adminPassword },
+      json: (body: unknown, status: number, headers: Record<string, string>) =>
+        new Response(JSON.stringify(body), { status, headers }),
+    };
+
+    const res = (await adminAuth(c as never, next)) as Response;
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toBe(401);
+    expect(res.headers.get("WWW-Authenticate")).toContain("Basic");
+    expect(await res.json()).toEqual({ error: "Unauthorized" });
   });
 });

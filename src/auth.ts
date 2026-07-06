@@ -57,6 +57,7 @@ export const keyAuth: MiddlewareHandler<{ Bindings: Env; Variables: { keyId: str
 export const adminAuth: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
   const creds = parseBasicAuth(c.req.header("Authorization") ?? null);
   if (!creds || creds.user !== "admin") return unauthorized(c);
+  if (!c.env.ADMIN_PASSWORD) return unauthorized(c);
   const [given, expected] = await Promise.all([
     sha256Hex(creds.pass),
     sha256Hex(c.env.ADMIN_PASSWORD),

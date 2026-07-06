@@ -19,7 +19,8 @@ You can also set `ADMIN_PASSWORD` in the Cloudflare dashboard Variables UI.
     pnpm deploy
     wrangler secret put ADMIN_PASSWORD
 
-`pnpm deploy` auto-provisions D1 and runs migrations.
+`pnpm deploy` builds the snippet, deploys the Worker, lets Wrangler
+auto-provision the D1 database, then applies remote migrations.
 
 ## EU Data Residency
 

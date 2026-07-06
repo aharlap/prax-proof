@@ -15,16 +15,16 @@ outgrow Proof, export or forward them to a full LRS such as
 
 ## Status
 
-Milestones 1–3 are complete: xAPI statement ingest, the `p.js` snippet with
-identity modes, and the teacher dashboard (activities, drop-off funnel,
-learner timelines, key management, CSV/JSON export) — held to zero axe
-violations by a Playwright + axe-core gate (`pnpm test:a11y`). Milestone 4
-(one-click Deploy to Cloudflare + docs) is next; see the repo issues for the
-tracked backlog.
+Milestones 1-4 are complete: xAPI statement ingest, the `p.js` snippet with
+identity modes, the teacher dashboard (activities, drop-off funnel, learner
+timelines, key management, CSV/JSON export), and one-click Deploy to
+Cloudflare with docs. v1 is shipped and held to zero axe violations by a
+Playwright + axe-core gate (`pnpm test:a11y`).
 
 ## Quickstart (local)
 
     pnpm install
+    wrangler d1 migrations apply proof --local
     pnpm dev                # wrangler dev with a local D1
 
 Mint an ingest key (admin password is the ADMIN_PASSWORD secret; use any
