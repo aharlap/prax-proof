@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import { ADMIN } from "./helpers";
 
 describe("CORS on /xapi/*", () => {
   it("answers preflight for statements", async () => {
@@ -27,5 +28,12 @@ describe("CORS on /xapi/*", () => {
     });
     expect(res.status).toBe(200);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+  });
+
+  it("does not add the allow-origin header to admin routes", async () => {
+    const res = await SELF.fetch("https://proof.test/admin/keys", {
+      headers: { ...ADMIN, Origin: "https://learner-page.example" },
+    });
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
   });
 });

@@ -56,4 +56,32 @@ describe("learner detail", () => {
       )).status,
     ).toBe(404);
   });
+
+  it("does not render correct or incorrect markers when success is absent", async () => {
+    const iri = "https://example.org/x/no-success-progress";
+    const s = new D1Storage(env.DB);
+    await ingestStatements(s, {
+      id: "ccccccc1-2222-4333-8444-ccccccccccc1",
+      actor: {
+        account: { homePage: "https://lms.example", name: "learner-no-success" },
+        name: "No Success",
+      },
+      verb: { id: "http://adlnet.gov/expapi/verbs/progressed" },
+      object: { id: iri, definition: { name: { en: "No Success Activity" } } },
+      timestamp: "2026-07-02T12:00:00Z",
+    });
+    const row = await env.DB
+      .prepare("SELECT id FROM learners WHERE identity = ?")
+      .bind("https://lms.example|learner-no-success")
+      .first<{ id: string }>();
+    const res = await SELF.fetch(
+      `https://proof.test/dashboard/learner?id=${row!.id}&iri=${encodeURIComponent(iri)}`,
+      { headers: ADMIN },
+    );
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Progressed");
+    expect(html).not.toContain("✓ correct");
+    expect(html).not.toContain("✗ incorrect");
+  });
 });

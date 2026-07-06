@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { Hono } from "hono";
-import { sha256Hex } from "../auth";
+import { mintKey } from "../auth";
 import type { Env } from "../env";
 import { D1Storage } from "../storage/d1";
 import type { FunnelStep, TimelineRow } from "../storage/types";
@@ -301,10 +301,7 @@ dashboardRoutes.post("/keys", async (c) => {
   const label = typeof form.label === "string" ? form.label.trim() : "";
   if (!label) return c.text("A non-empty label is required", 400);
   const s = new D1Storage(c.env.DB);
-  const id = crypto.randomUUID();
-  const secretBytes = crypto.getRandomValues(new Uint8Array(32));
-  const secret = [...secretBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-  await s.createKey(id, await sha256Hex(secret), label);
+  const { id, secret } = await mintKey(c.env.DB, label);
   const keys = await s.listKeys();
   return c.html(<KeysPage keys={keys} minted={{ id, secret, label }} origin={origin} />);
 });

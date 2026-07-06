@@ -60,6 +60,12 @@ describe("resolveIdentity", () => {
     const without = resolveIdentity("token", fakeAdapters());
     expect(without.account.name).toBe("device-uuid-1");
   });
+
+  it("token mode does not store a device id when the URL token is present", () => {
+    const a = fakeAdapters({ urlParam: (n) => (n === "plearner" ? "tok-7f3a" : null) });
+    resolveIdentity("token", a);
+    expect(a.store.has("proof:device")).toBe(false);
+  });
 });
 
 describe("statement builders", () => {

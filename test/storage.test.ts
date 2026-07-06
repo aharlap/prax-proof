@@ -45,6 +45,15 @@ describe("D1Storage", () => {
     expect(a).toBe(b);
   });
 
+  it("upsertLearner preserves an existing display name when a later call passes null", async () => {
+    const s = new D1Storage(env.DB);
+    await s.upsertLearner("mailto:real-name@example.org", "Real Name");
+    await s.upsertLearner("mailto:real-name@example.org", null);
+    const r = await env.DB.prepare("SELECT display_name FROM learners WHERE identity = ?")
+      .bind("mailto:real-name@example.org").first<{ display_name: string }>();
+    expect(r?.display_name).toBe("Real Name");
+  });
+
   it("insertStatements is idempotent per statement id", async () => {
     const s = new D1Storage(env.DB);
     const first = await s.insertStatements([row("11111111-1111-4111-8111-111111111111")]);

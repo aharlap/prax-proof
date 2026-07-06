@@ -23,6 +23,12 @@ describe("parseStatements", () => {
     if (r.ok) expect(r.statements).toHaveLength(2);
   });
 
+  it("reports the 1-based statement number when the second batch item is invalid", () => {
+    const r = parseStatements([valid, { ...valid, verb: { id: "completed" } }]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain("Statement 2");
+  });
+
   it("accepts actors identified by account", () => {
     const r = parseStatements({
       ...valid,

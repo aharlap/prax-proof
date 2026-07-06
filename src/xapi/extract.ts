@@ -41,7 +41,12 @@ export function activityName(stmt: ValidStatement): string | null {
   if (!isActivityObject(stmt.object)) return null;
   const names = (stmt.object as { definition?: { name?: Record<string, string> } }).definition?.name;
   if (!names) return null;
-  return names.en ?? Object.values(names)[0] ?? null;
+  return (
+    names.en ??
+    Object.entries(names).find(([key]) => key.startsWith("en"))?.[1] ??
+    Object.values(names)[0] ??
+    null
+  );
 }
 
 const STEP_EXT = "https://praxity.io/xapi/ext/step";

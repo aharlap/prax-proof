@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
 import snippetJs from "./generated/p.js.txt";
 import { cors } from "hono/cors";
-import { adminAuth, keyAuth, sha256Hex } from "./auth";
+import { adminAuth, keyAuth, mintKey } from "./auth";
 import type { Env } from "./env";
 import { D1Storage } from "./storage/d1";
 import { rateLimit } from "./ratelimit";
@@ -100,14 +100,12 @@ app.put("/xapi/statements", requireVersion, keyAuth, rateLimit(120), async (c) =
 
 app.post("/admin/keys", adminAuth, async (c) => {
   const body = await readJson(c);
-  const label = (body as { label?: unknown } | undefined)?.label;
-  if (typeof label !== "string" || label.length === 0) {
+  const rawLabel = (body as { label?: unknown } | undefined)?.label;
+  const label = typeof rawLabel === "string" ? rawLabel.trim() : "";
+  if (!label) {
     return c.json({ error: "A non-empty label string is required.", docs: ERROR_DOCS }, 400);
   }
-  const id = crypto.randomUUID();
-  const secretBytes = crypto.getRandomValues(new Uint8Array(32));
-  const secret = [...secretBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-  await new D1Storage(c.env.DB).createKey(id, await sha256Hex(secret), label);
+  const { id, secret } = await mintKey(c.env.DB, label);
   return c.json({ id, secret, label }, 201);
 });
 

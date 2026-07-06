@@ -72,6 +72,26 @@ describe("extractColumns", () => {
 
 describe("activityName", () => {
   it("prefers the en name", () => expect(activityName(base)).toBe("Fractions Quiz"));
+  it("uses an en-* name when there is no exact en name", () =>
+    expect(
+      activityName({
+        ...base,
+        object: {
+          id: "https://example.org/a",
+          definition: { name: { fr: "Quiz fractions", "en-US": "Fractions Quiz US" } },
+        },
+      }),
+    ).toBe("Fractions Quiz US"));
+  it("uses the first name when there are only non-en names", () =>
+    expect(
+      activityName({
+        ...base,
+        object: {
+          id: "https://example.org/a",
+          definition: { name: { fr: "Quiz fractions" } },
+        },
+      }),
+    ).toBe("Quiz fractions"));
   it("returns null when object has no definition", () =>
     expect(activityName({ ...base, object: { id: "https://example.org/a" } })).toBeNull());
 });

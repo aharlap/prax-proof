@@ -21,6 +21,14 @@ export async function sha256Hex(input: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+export async function mintKey(db: D1Database, label: string): Promise<{ id: string; secret: string }> {
+  const id = crypto.randomUUID();
+  const secretBytes = crypto.getRandomValues(new Uint8Array(32));
+  const secret = [...secretBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  await new D1Storage(db).createKey(id, await sha256Hex(secret), label);
+  return { id, secret };
+}
+
 export function timingSafeEqualStr(a: string, b: string): boolean {
   // Compare fixed-length hex digests without early exit.
   if (a.length !== b.length) return false;
