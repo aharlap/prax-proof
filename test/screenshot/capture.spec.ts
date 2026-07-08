@@ -144,6 +144,7 @@ test("captures the dashboard activity detail screenshot", async ({ page, request
 
     progressed("aaaaaaaa-0031-4000-8000-000000000031", actors.amara, regs.amara, "review", "Review", 13),
     progressed("aaaaaaaa-0032-4000-8000-000000000032", actors.ben, regs.ben, "review", "Review", 12),
+    progressed("aaaaaaaa-0033-4000-8000-000000000033", actors.chloe, regs.chloe, "review", "Review", 11.5),
 
     answered("aaaaaaaa-0041-4000-8000-000000000041", actors.amara, regs.amara, "B", true, 11),
     answered("aaaaaaaa-0042-4000-8000-000000000042", actors.ben, regs.ben, "C", false, 10),

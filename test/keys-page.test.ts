@@ -17,6 +17,7 @@ describe("keys page", () => {
     const html = KeysPage({ keys: [], origin: "https://proof.test" }).toString();
     expect(html).toContain("create your first key below");
     expect(html).toContain("Proof hands you everything to paste into your page or AI builder");
+    expect(html).not.toContain("No keys yet.</p>");
   });
 
   it("mints a key via the form and shows the secret once", async () => {
@@ -30,6 +31,7 @@ describe("keys page", () => {
     expect(html).toMatch(/[0-9a-f]{64}/);          // one-time secret shown
     expect(html).toContain("Form minted");
     expect(html).toContain("data-key=");            // embed sample
+    expect(html).toContain("data-name=");
     expect(html).toContain("Or paste this prompt into your AI builder (Claude, ChatGPT, Gemini):");
     expect(html).toContain("Fetch https://proof.test/llms.txt and follow its instructions exactly");
     expect(html).toContain("and pick a short kebab-case data-activity slug plus a human data-name");

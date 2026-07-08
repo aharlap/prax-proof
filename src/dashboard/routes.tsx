@@ -95,11 +95,13 @@ function FunnelSection(props: {
   ];
   const startedRow = rows[0].learners;
   let biggestIdx = -1;
-  let biggestDrop = 0;
+  let biggestDropRate = 0;
   for (let i = 1; i < rows.length; i++) {
-    const drop = rows[i - 1].learners - rows[i].learners;
-    if (drop > biggestDrop) {
-      biggestDrop = drop;
+    const previous = rows[i - 1].learners;
+    const drop = previous - rows[i].learners;
+    const rate = previous > 0 && drop > 0 ? drop / previous : 0;
+    if (rate > biggestDropRate) {
+      biggestDropRate = rate;
       biggestIdx = i;
     }
   }
@@ -143,7 +145,7 @@ function FunnelSection(props: {
           })}
         </tbody>
       </table>
-      <p class="prax-soft">Started = learners who began the activity. A drop-off counts learners who reached a step but none after it.</p>
+      <p class="prax-soft">Started = learners who began the activity. A drop-off counts learners who reached a step but none after it. Learners can skip steps, so a later row can exceed an earlier one.</p>
     </>
   );
 }
@@ -340,7 +342,7 @@ export function KeysPage(props: {
           <p>secret: <code>{props.minted.secret}</code></p>
           <p>Embed sample:</p>
           <pre>
-            <code>{`<script src="${props.origin}/p.js"\n        data-activity="my-activity"\n        data-key="${props.minted.id}:${props.minted.secret}"\n        data-identity="ask"></script>`}</code>
+            <code>{`<script src="${props.origin}/p.js"\n        data-activity="my-activity"\n        data-name="${props.minted.label}"\n        data-key="${props.minted.id}:${props.minted.secret}"\n        data-identity="ask"></script>`}</code>
           </pre>
           <p>Or paste this prompt into your AI builder (Claude, ChatGPT, Gemini):</p>
           <pre>
@@ -356,9 +358,7 @@ export function KeysPage(props: {
         <input id="label" name="label" required maxlength={80} />{" "}
         <button type="submit">Create key</button>
       </form>
-      {props.keys.length === 0 ? (
-        <p class="prax-empty">No keys yet.</p>
-      ) : (
+      {props.keys.length === 0 ? null : (
         <table>
           <caption>Existing keys (secrets are never shown again)</caption>
           <thead>

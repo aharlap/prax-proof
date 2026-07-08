@@ -8,16 +8,21 @@ import { bridgeSession } from "./fixtures/bridge-session";
 import { ADMIN } from "./helpers";
 
 const IRI = "https://example.org/x/funnel-quiz";
+const PERCENT_IRI = "https://example.org/x/percentage-drop-quiz";
 const V = "http://adlnet.gov/expapi/verbs/";
 
 const learner = (name: string) => ({ account: { homePage: "https://p.test", name } });
-const init = (who: string) => ({
-  actor: learner(who), verb: { id: `${V}initialized` }, object: { id: IRI },
+const init = (who: string, iri = IRI) => ({
+  actor: learner(who), verb: { id: `${V}initialized` }, object: { id: iri },
   timestamp: "2026-07-03T10:00:00Z",
 });
-const step = (who: string, id: string, ts: string) => ({
+const step = (who: string, id: string, ts: string, iri = IRI) => ({
   actor: learner(who), verb: { id: `${V}progressed` },
-  object: { id: `${IRI}/steps/${id}` }, timestamp: ts,
+  object: { id: `${iri}/steps/${id}` }, timestamp: ts,
+});
+const complete = (who: string, ts: string, iri = IRI) => ({
+  actor: learner(who), verb: { id: `${V}completed` },
+  object: { id: iri }, result: { completion: true }, timestamp: ts,
 });
 
 beforeAll(async () => {
@@ -28,6 +33,13 @@ beforeAll(async () => {
   for (const who of ["d1", "d2", "d3"]) await ingestStatements(s, [init(who)]);
   await ingestStatements(s, [step("d1", "intro", "2026-07-03T10:01:00Z"), step("d2", "intro", "2026-07-03T10:02:00Z")]);
   await ingestStatements(s, [step("d1", "wrap-up", "2026-07-03T10:05:00Z")]);
+
+  for (let i = 1; i <= 10; i++) await ingestStatements(s, [init(`p${i}`, PERCENT_IRI)]);
+  for (let i = 1; i <= 5; i++) {
+    await ingestStatements(s, [step(`p${i}`, "broad-start", `2026-07-04T10:0${i}:00Z`, PERCENT_IRI)]);
+  }
+  await ingestStatements(s, [step("p1", "filter-review", "2026-07-04T10:07:00Z", PERCENT_IRI)]);
+  await ingestStatements(s, [complete("p1", "2026-07-04T10:08:00Z", PERCENT_IRI)]);
 });
 
 describe("stepFunnel", () => {
@@ -59,11 +71,25 @@ describe("funnel section on activity detail", () => {
     const html = await res.text();
     expect(html).toContain("Drop-off funnel");
     expect(html).toContain("Retention");
-    expect(html).toContain("Started = learners who began the activity. A drop-off counts learners who reached a step but none after it.");
+    expect(html).toContain("Started = learners who began the activity. A drop-off counts learners who reached a step but none after it. Learners can skip steps, so a later row can exceed an earlier one.");
     expect(html).toContain("Started");
     expect(html).toContain("Finished");
     expect(html).toContain("Intro");
     expect(html).toContain("▼ biggest drop-off");
+    expect(html).toMatch(/<tr class="prax-drop-row">\s*<td title="intro">Intro<\/td>[\s\S]*?▼ biggest drop-off/);
+  });
+
+  it("marks the largest percentage drop, even when a larger absolute loss appears earlier", async () => {
+    const res = await SELF.fetch(
+      `https://proof.test/dashboard/activity?iri=${encodeURIComponent(PERCENT_IRI)}`,
+      { headers: ADMIN },
+    );
+    const html = await res.text();
+    expect(html).toContain("Broad start");
+    expect(html).toContain("−5 (50%)");
+    expect(html).toContain("Filter review");
+    expect(html).toContain("−4 (80%)");
+    expect(html).toMatch(/<tr class="prax-drop-row">\s*<td title="filter-review">Filter review<\/td>[\s\S]*?−4 \(80%\)[\s\S]*?▼ biggest drop-off/);
   });
 
   it("uses identical fixed-track percentages for equal-count steps", async () => {
