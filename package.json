@@ -11,6 +11,7 @@
     "deploy": "pnpm build:snippet && wrangler deploy && wrangler d1 migrations apply DB --remote",
     "test": "pnpm build:snippet && vitest run",
     "test:watch": "vitest",
+    "field": "pnpm build:snippet && rm -rf .wrangler/state && wrangler d1 migrations apply proof --local && playwright test -c playwright.field.config.ts",
     "test:a11y": "pnpm build:snippet && wrangler d1 migrations apply proof --local && playwright test -c playwright.config.ts",
     "screenshot": "pnpm build:snippet && rm -rf .wrangler/state && wrangler d1 migrations apply proof --local && playwright test -c playwright.screenshot.config.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.browser.json"

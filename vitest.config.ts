@@ -22,7 +22,7 @@ export default defineConfig(async () => {
     ],
     test: {
       setupFiles: ["./test/apply-migrations.ts"],
-      exclude: ["test/a11y/**", "test/screenshot/**", "node_modules/**"],
+      exclude: ["test/a11y/**", "test/screenshot/**", "test/field/**", "node_modules/**"],
     },
   };
 });

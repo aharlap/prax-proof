@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MIT -->
+<!--
+  Proof × H5P live demo / field-test harness.
+
+  This page loads the REAL H5P runtime (h5p-standalone, which creates the real
+  window.H5P + H5P.externalDispatcher + H5P.XAPIEvent classes), then the REAL
+  Proof snippet (p.js) with the data-h5p attribute. When H5P emits an xAPI
+  event, the Proof bridge translates and sends it — no proof.* calls anywhere
+  on this page.
+
+  The two placeholders __PROOF_ORIGIN__ and __PROOF_KEY__ are substituted by the
+  field-test spec (test/field/h5p-live.spec.ts) with a live wrangler-dev origin
+  and a freshly minted ingest key. To run it by hand: replace them, serve this
+  folder, and open it next to a running Proof instance.
+
+  The "Complete the H5P activity" button fires a genuine H5P.XAPIEvent
+  (completed, with a score) through the real H5P.externalDispatcher — the exact
+  object and channel Proof's bridge subscribes to. Content rendering is the only
+  thing not exercised; it is H5P's code, not Proof's.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proof × H5P demo</title>
+  <!-- The host page always provides H5PIntegration (this is host config, not
+       H5P's job). A minimal one lets the H5P runtime boot cleanly. -->
+  <script>
+    window.H5PIntegration = {
+      baseUrl: location.origin, url: "", siteUrl: location.origin,
+      postUserStatistics: false, saveFreq: false, hubIsEnabled: false,
+      l10n: {}, contents: {}, core: { scripts: [], styles: [] },
+      loadedJs: [], loadedCss: [], urlLibraries: "",
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/h5p-standalone@3.7.0/dist/frame.bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/h5p-standalone@3.7.0/dist/main.bundle.js"></script>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
+    button { font-size: 1rem; padding: 0.6rem 1.1rem; cursor: pointer; }
+    #status { margin-top: 1rem; color: #444; }
+    .ok { color: #0b6e4f; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Fractions quiz (H5P)</h1>
+  <p>This page hosts H5P content. Proof tracks it automatically via <code>data-h5p</code>.</p>
+
+  <button id="start">Start the H5P activity</button>
+  <button id="answer">Answer question 1 (correct)</button>
+  <button id="complete">Complete the H5P activity (score 8/10)</button>
+  <p id="status">Waiting for H5P runtime…</p>
+
+  <script>
+    // Wait for the real H5P runtime, then wire two buttons that emit genuine
+    // H5P.XAPIEvent objects through the real externalDispatcher.
+    (function () {
+      var status = document.getElementById("status");
+      var tries = 0;
+      var iv = setInterval(function () {
+        tries++;
+        if (window.H5P && H5P.externalDispatcher && H5P.XAPIEvent) {
+          clearInterval(iv);
+          status.textContent = "H5P runtime ready. Interact to send events.";
+
+
+          var CONTENT = "https://school.example/h5p/fractions"; // main content id
+          var SUB = "abc-123"; // a subcontent (question) id
+
+          function fire(verbKey, objectId, def, result) {
+            // Real H5P.XAPIEvent instance + real dispatcher; we populate the
+            // statement directly (setActor/setVerb helpers need a content
+            // instance, which a bare harness has none of).
+            var e = new H5P.XAPIEvent();
+            e.data = e.data || {};
+            e.data.statement = {
+              actor: { objectType: "Agent", account: { name: "h5p-anon", homePage: "https://h5p.example" } },
+              verb: { id: "http://adlnet.gov/expapi/verbs/" + verbKey, display: { "en-US": verbKey } },
+              object: { id: objectId, objectType: "Activity", definition: def },
+            };
+            if (result) e.data.statement.result = result;
+            try {
+              // Pass the event object itself — its .type is already "xAPI",
+              // exactly how real H5P content emits. (Passing the string
+              // "xAPI" makes H5P wrap the event and lose data.statement.)
+              H5P.externalDispatcher.trigger(e);
+            } catch (err) {
+              status.textContent = "trigger error: " + err;
+              console.error("trigger error", err);
+            }
+          }
+
+          // Real H5P fires "attempted" on the main content when it loads;
+          // here it's a button so the demo is deterministic.
+          document.getElementById("start").onclick = function () {
+            fire("attempted",
+              CONTENT,
+              { name: { "en-US": "Fractions quiz" },
+                type: "http://adlnet.gov/expapi/activities/module" },
+              null);
+            status.innerHTML = '<span class="ok">started → sent</span>';
+          };
+
+          document.getElementById("answer").onclick = function () {
+            fire("answered",
+              CONTENT + "?subContentId=" + SUB,
+              { name: { "en-US": "Which fraction is largest?" },
+                interactionType: "choice",
+                type: "http://adlnet.gov/expapi/activities/cmi.interaction",
+                correctResponsesPattern: ["1"] },
+              { response: "1", success: true, score: { raw: 1, min: 0, max: 1, scaled: 1 } });
+            status.innerHTML = '<span class="ok">answered → sent</span>';
+          };
+
+          document.getElementById("complete").onclick = function () {
+            fire("completed",
+              CONTENT,
+              { name: { "en-US": "Fractions quiz" },
+                type: "http://adlnet.gov/expapi/activities/module" },
+              { completion: true, success: true, duration: "PT2M10S",
+                score: { raw: 8, min: 0, max: 10, scaled: 0.8 } });
+            status.innerHTML = '<span class="ok">completed → sent</span>';
+          };
+        } else if (tries > 40) {
+          clearInterval(iv);
+          status.textContent = "H5P runtime did not load.";
+        }
+      }, 100);
+    })();
+  </script>
+
+  <!-- The REAL Proof snippet. data-h5p turns on the auto-bridge. -->
+  <script src="__PROOF_ORIGIN__/p.js"
+          data-activity="h5p-demo"
+          data-name="Fractions quiz (H5P demo)"
+          data-key="__PROOF_KEY__"
+          data-identity="anonymous"
+          data-h5p></script>
+</body>
+</html>
