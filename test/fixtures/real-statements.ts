@@ -38,6 +38,75 @@ export const h5pAnswered = {
   },
 };
 
+/** H5P module "attempted" main content — modeled on H5P's xAPI documentation. */
+export const h5pAttemptedMain = {
+  actor: {
+    name: "Amara O.",
+    mbox: "mailto:amara@example.org",
+    objectType: "Agent" as const,
+  },
+  verb: {
+    id: "http://adlnet.gov/expapi/verbs/attempted",
+    display: { "en-US": "attempted" },
+  },
+  object: {
+    id: "https://school.example/h5p/12",
+    objectType: "Activity" as const,
+    definition: {
+      name: { "en-US": "Fractions check" },
+      type: "http://adlnet.gov/expapi/activities/module",
+    },
+  },
+};
+
+/** H5P module "attempted" subcontent — modeled on H5P's xAPI documentation. */
+export const h5pAttemptedSub = {
+  actor: {
+    name: "Amara O.",
+    mbox: "mailto:amara@example.org",
+    objectType: "Agent" as const,
+  },
+  verb: {
+    id: "http://adlnet.gov/expapi/verbs/attempted",
+    display: { "en-US": "attempted" },
+  },
+  object: {
+    id: "https://school.example/h5p/12?subContentId=abc-123",
+    objectType: "Activity" as const,
+    definition: {
+      name: { "en-US": "Fractions check" },
+      type: "http://adlnet.gov/expapi/activities/module",
+    },
+  },
+};
+
+/** H5P module "completed" main content — modeled on H5P's xAPI documentation. */
+export const h5pCompletedMain = {
+  actor: {
+    name: "Amara O.",
+    mbox: "mailto:amara@example.org",
+    objectType: "Agent" as const,
+  },
+  verb: {
+    id: "http://adlnet.gov/expapi/verbs/completed",
+    display: { "en-US": "completed" },
+  },
+  object: {
+    id: "https://school.example/h5p/12",
+    objectType: "Activity" as const,
+    definition: {
+      name: { "en-US": "Fractions check" },
+      type: "http://adlnet.gov/expapi/activities/module",
+    },
+  },
+  result: {
+    score: { raw: 8, min: 0, max: 10, scaled: 0.8 },
+    completion: true,
+    success: true,
+    duration: "PT2M10S",
+  },
+};
+
 /** TinCanJS "experienced" — minimal statement TinCanJS sends. */
 export const tincanExperienced = {
   actor: { mbox: "mailto:ben@example.org", name: "Ben T" },
