@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { describe, expect, it } from "vitest";
-import { translateH5p } from "../src/snippet/h5p";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { subscribeH5p, translateH5p } from "../src/snippet/h5p";
 import type { SnippetContext } from "../src/snippet/core";
 import {
   h5pAnswered,
@@ -85,5 +85,55 @@ describe("translateH5p", () => {
     const s = translateH5p(h5pAttemptedMain, ctxWithoutPage) as Record<string, any>;
     expect(s.context.registration).toBe(ctx.registration);
     expect(s.context.extensions).toBeUndefined();
+  });
+});
+
+describe("subscribeH5p", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("subscribes when H5P appears and forwards xAPI statements", () => {
+    const win: Record<string, unknown> = {};
+    const seen: unknown[] = [];
+    const handlers: Array<(event: unknown) => void> = [];
+    const dispatcher = {
+      on: vi.fn((eventName: string, cb: (event: unknown) => void) => {
+        expect(eventName).toBe("xAPI");
+        handlers.push(cb);
+      }),
+    };
+
+    subscribeH5p(win, (stmt) => seen.push(stmt), { intervalMs: 10, timeoutMs: 100 });
+    vi.advanceTimersByTime(10);
+    expect(dispatcher.on).not.toHaveBeenCalled();
+
+    win.H5P = { externalDispatcher: dispatcher };
+    vi.advanceTimersByTime(10);
+    expect(dispatcher.on).toHaveBeenCalledTimes(1);
+
+    const handler = handlers[0];
+    handler?.({ data: { statement: { id: "stmt-1" } } });
+    handler?.({ data: {} });
+    expect(seen).toEqual([{ id: "stmt-1" }]);
+
+    vi.advanceTimersByTime(100);
+    expect(dispatcher.on).toHaveBeenCalledTimes(1);
+  });
+
+  it("warns once when H5P is not found before timeout", () => {
+    const warn = vi.fn();
+
+    subscribeH5p({}, vi.fn(), { intervalMs: 10, timeoutMs: 25, warn });
+    vi.advanceTimersByTime(30);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith("data-h5p is set but H5P was not found on this page");
+
+    vi.advanceTimersByTime(100);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });

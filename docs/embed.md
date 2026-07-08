@@ -37,6 +37,29 @@ can link to the live page.
 | `ask` | one name prompt, remembered on the device | the entered name |
 | `token` | nothing — identity rides `?plearner=TOKEN` links you hand out | one row per token |
 
+## Track H5P content
+
+If the page already hosts H5P content, add `data-h5p` to the same Proof script
+tag. No `proof.start()` or other calls are needed for the H5P activity.
+
+```html
+<script src="https://YOUR-INSTANCE/p.js"
+        data-activity="fractions-h5p"
+        data-name="Fractions H5P"
+        data-key="KEY_ID:KEY_SECRET"
+        data-h5p></script>
+```
+
+Proof tracks H5P starts, completions, pass/fail, scores, and per-question
+answers with H5P's own question titles. Per-interaction noise is deliberately
+not forwarded.
+
+Limitation: H5P only exposes events to the page hosting it. Per H5P's docs,
+"You can't embed H5P from an external site and use JavaScript on your own site
+to track what the learner does." `data-h5p` works where the H5P content and the
+page are on the same site, such as WordPress/Drupal plugins, h5p-standalone, or
+Lumi HTML exports. It does not work for h5p.org cross-site iframe embeds.
+
 ## About the embedded key
 
 The `data-key` value is visible to anyone who views your page source. That

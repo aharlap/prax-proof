@@ -63,3 +63,78 @@ export function translateH5p(stmt: unknown, ctx: SnippetContext): Record<string,
   if (isRecord(stmt.result)) out.result = stmt.result;
   return out;
 }
+
+type H5pDispatcher = {
+  on: (eventName: string, handler: (event: unknown) => void) => void;
+};
+
+function readDispatcher(win: unknown): H5pDispatcher | null {
+  if (!isRecord(win)) return null;
+  const h5p = win.H5P;
+  if (!isRecord(h5p)) return null;
+  const dispatcher = h5p.externalDispatcher;
+  if (!isRecord(dispatcher) || typeof dispatcher.on !== "function") return null;
+  return dispatcher as H5pDispatcher;
+}
+
+function statementFromEvent(event: unknown): unknown {
+  if (!isRecord(event) || !isRecord(event.data)) return null;
+  return event.data.statement;
+}
+
+export function subscribeH5p(
+  win: unknown,
+  onStatement: (stmt: unknown) => void,
+  opts?: { intervalMs?: number; timeoutMs?: number; warn?: (msg: string) => void },
+): void {
+  const intervalMs = opts?.intervalMs ?? 250;
+  const timeoutMs = opts?.timeoutMs ?? 20000;
+  let elapsedMs = 0;
+  let timer: ReturnType<typeof setInterval> | undefined;
+
+  const stop = () => {
+    if (timer !== undefined) {
+      clearInterval(timer);
+      timer = undefined;
+    }
+  };
+
+  const timeout = () => {
+    stop();
+    try {
+      opts?.warn?.("data-h5p is set but H5P was not found on this page");
+    } catch {
+      // Preserve the snippet's never-throw contract.
+    }
+  };
+
+  const poll = () => {
+    try {
+      const dispatcher = readDispatcher(win);
+      if (dispatcher) {
+        stop();
+        dispatcher.on("xAPI", (event: unknown) => {
+          try {
+            const stmt = statementFromEvent(event);
+            if (stmt) onStatement(stmt);
+          } catch {
+            // H5P event handlers must not throw into the host page.
+          }
+        });
+        return;
+      }
+
+      elapsedMs += intervalMs;
+      if (elapsedMs >= timeoutMs) timeout();
+    } catch {
+      elapsedMs += intervalMs;
+      if (elapsedMs >= timeoutMs) timeout();
+    }
+  };
+
+  try {
+    timer = setInterval(poll, intervalMs);
+  } catch {
+    // Preserve the snippet's never-throw contract.
+  }
+}

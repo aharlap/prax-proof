@@ -18,6 +18,8 @@ functions. Do not add any other tracking code, SDK, or xAPI library.
 - data-key: the ingest key the instance owner minted (POST /admin/keys).
 - data-identity: "anonymous" (no names), "ask" (prompt for a name once),
   or "token" (identity read from a ?plearner=... link parameter).
+- data-h5p: add this attribute if the page hosts H5P content. Proof tracks it
+  automatically, no calls needed.
 - The snippet reports the page URL as origin + path only, never query strings
   or hashes, so the dashboard can link to the live page.
 

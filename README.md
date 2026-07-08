@@ -10,7 +10,7 @@ See who did your learning activity, how they scored, and where they dropped off 
 ## How it works
 
 1. Deploy your instance (one click below, or CLI).
-2. Add one script tag to any page — or paste one prompt into your AI builder.
+2. Add one script tag to any page — or paste one prompt into your AI builder, or add data-h5p to a page that already hosts H5P content.
 3. Watch results land: completion rate, drop-off funnel, per-learner timelines, CSV export.
 
 ## Compared honestly

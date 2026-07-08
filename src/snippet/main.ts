@@ -5,6 +5,7 @@ import {
   buildAnswer, buildFinish, buildStart, buildStep, resolveIdentity,
   type IdentityMode, type SnippetContext,
 } from "./core";
+import { subscribeH5p, translateH5p } from "./h5p";
 
 type ProofApi = {
   start(): void;
@@ -30,6 +31,7 @@ type ProofApi = {
     const activityName = script.getAttribute("data-name");
     const key = script.getAttribute("data-key");
     if (!activity || !key) return warn("data-activity and data-key are required");
+    const trackH5p = script.hasAttribute("data-h5p");
     const mode = (script.getAttribute("data-identity") ?? "anonymous") as IdentityMode;
     const origin = new URL(script.src).origin;
 
@@ -82,6 +84,17 @@ type ProofApi = {
       answer: guard((id: string, opts?: { response?: string; correct?: boolean }) => buildAnswer(ctx, id, opts)),
       finish: guard((result?: { score?: number; max?: number; min?: number }) => buildFinish(ctx, result)),
     };
+
+    if (trackH5p) {
+      subscribeH5p(window, (stmt) => {
+        try {
+          const translated = translateH5p(stmt, ctx);
+          if (translated) send(translated);
+        } catch (e) {
+          warn(e);
+        }
+      }, { warn });
+    }
   } catch (e) {
     warn("failed to initialize:", e);
   }
