@@ -6,6 +6,8 @@ export function Landing() {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="preconnect" href="https://fonts.bunny.net" />
+        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=nunito:800|poppins:400,500" />
         <link rel="stylesheet" href="/dashboard.css" />
         <title>Proof</title>
       </head>

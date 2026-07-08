@@ -8,6 +8,8 @@ export function Layout(props: PropsWithChildren<{ title: string }>) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{props.title} · Proof</title>
+        <link rel="preconnect" href="https://fonts.bunny.net" />
+        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=nunito:800|poppins:400,500" />
         <link rel="stylesheet" href="/dashboard.css" />
       </head>
       <body>
