@@ -23,11 +23,12 @@ export function Layout(props: PropsWithChildren<{ title: string }>) {
   );
 }
 
-export function StatCard(props: { label: string; value: string }) {
+export function StatCard(props: { label: string; value: string; sub?: string; hero?: boolean }) {
   return (
-    <div class="prax-stat">
+    <div class={props.hero ? "prax-stat prax-stat-hero" : "prax-stat"}>
       <b>{props.value}</b>
       <span>{props.label}</span>
+      {props.sub ? <span class="prax-sub">{props.sub}</span> : null}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { mintKey } from "../auth";
 import type { Env } from "../env";
 import { D1Storage } from "../storage/d1";
-import type { FunnelStep, TimelineRow } from "../storage/types";
+import type { DayCount, FunnelStep, TimelineRow } from "../storage/types";
 import { toCsv } from "./csv";
 import { Layout, StatCard } from "./ui";
 
@@ -21,6 +21,33 @@ function formatDuration(sec: number | null): string {
   if (sec === null) return "—";
   if (sec < 30) return "<1 min";
   return `${Math.max(1, Math.round(sec / 60))} min`;
+}
+
+export function humanizeStep(id: string): string {
+  const label = id.replace(/[-_:]+/g, " ").trim();
+  return label ? label.charAt(0).toUpperCase() + label.slice(1) : id;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ACCOUNT_UUID_RE = /\|([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+function anonymousLabel(uuid: string): string {
+  return `Anonymous · ${uuid.slice(0, 4)}`;
+}
+
+export function displayLabel(label: string): string {
+  if (UUID_RE.test(label)) return anonymousLabel(label);
+  const match = ACCOUNT_UUID_RE.exec(label);
+  return match ? anonymousLabel(match[1]) : label;
+}
+
+function last14Days(perDay: DayCount[], now = new Date()): DayCount[] {
+  const counts = new Map(perDay.map((d) => [d.day, d.count]));
+  const end = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Array.from({ length: 14 }, (_, i) => {
+    const day = new Date(end - (13 - i) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return { day, count: counts.get(day) ?? 0 };
+  });
 }
 
 const VERB_LABELS: Record<string, string> = {
@@ -59,13 +86,14 @@ function FunnelSection(props: {
   started: number;
   finished: number;
   steps: FunnelStep[];
+  labels: Record<string, string>;
 }) {
   const rows = [
-    { label: "Started", learners: props.started },
-    ...props.steps.map((s) => ({ label: s.step, learners: s.learners })),
-    { label: "Finished", learners: props.finished },
+    { label: "Started", learners: props.started, raw: null },
+    ...props.steps.map((s) => ({ label: props.labels[s.step] ?? humanizeStep(s.step), learners: s.learners, raw: s.step })),
+    { label: "Finished", learners: props.finished, raw: null },
   ];
-  const max = Math.max(1, ...rows.map((r) => r.learners));
+  const startedRow = rows[0].learners;
   let biggestIdx = -1;
   let biggestDrop = 0;
   for (let i = 1; i < rows.length; i++) {
@@ -78,17 +106,44 @@ function FunnelSection(props: {
   return (
     <>
       <h2>Drop-off funnel</h2>
-      <div class="prax-bars">
-        {rows.map((r, i) => (
-          <div class="prax-bar">
-            <span>{r.label}</span>
-            <div class="fill" aria-hidden="true" style={`width:${Math.round((r.learners / max) * 100)}%`}></div>
-            <span>
-              {String(r.learners)} {i === biggestIdx ? "▼ biggest drop-off" : ""}
-            </span>
-          </div>
-        ))}
-      </div>
+      <table>
+        <caption>Learner progress through the activity, step by step</caption>
+        <thead>
+          <tr>
+            <th scope="col">Step</th>
+            <th scope="col">Learners</th>
+            <th scope="col">Retention</th>
+            <th scope="col">Drop-off</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const width = startedRow > 0 ? Math.round((r.learners / startedRow) * 100) : 0;
+            const retention = startedRow > 0 ? `${width}%` : "—";
+            const lost = i === 0 ? 0 : rows[i - 1].learners - r.learners;
+            const drop = i > 0 && lost > 0 && rows[i - 1].learners > 0
+              ? `−${lost} (${Math.round((lost / rows[i - 1].learners) * 100)}%)`
+              : "—";
+            return (
+              <tr class={i === biggestIdx ? "prax-drop-row" : ""}>
+                <td title={r.raw ?? undefined}>{r.label}</td>
+                <td>
+                  <div class="prax-track" aria-hidden="true">
+                    <div class="prax-track-fill" style={`width:${width}%`}></div>
+                  </div>
+                  <span>{String(r.learners)}</span>
+                </td>
+                <td>{retention}</td>
+                <td>
+                  {drop}
+                  {i === biggestIdx ? <strong> ▼ biggest drop-off</strong> : null}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p class="prax-soft">Started = learners who began the activity. A drop-off counts learners who reached a step but none after it.</p>
     </>
   );
 }
@@ -145,15 +200,22 @@ dashboardRoutes.get("/activity", async (c) => {
       404,
     );
   }
-  const [stats, roster, perDay, funnel, started] = await Promise.all([
+  const [stats, roster, perDay, funnel, started, stepLabels] = await Promise.all([
     s.getActivityStats(iri),
     s.listRoster(iri),
     s.attemptsPerDay(iri, 30),
     s.stepFunnel(iri),
     s.startedLearners(iri),
+    s.stepLabels(iri),
   ]);
-  const maxDay = Math.max(1, ...perDay.map((d) => d.count));
+  const renderedDays = last14Days(perDay);
+  const maxDay = Math.max(1, ...renderedDays.map((d) => d.count));
+  const hasRenderedAttempts = renderedDays.some((d) => d.count > 0);
+  const completionPct = started > 0 ? `${Math.round((stats.completions / started) * 100)}%` : "—";
+  const completionSub = started > 0 ? `${stats.completions} of ${started} learners` : "No learners yet";
   const avgPct = stats.avgScoreScaled === null ? "—" : `${Math.round(stats.avgScoreScaled * 100)}%`;
+  const avgLabel = stats.avgScoreScaled === null ? "Not scored" : "Avg score";
+  const medianTime = median(stats.durationsSec);
   return c.html(
     <Layout title={activity.name ?? activity.iri}>
       <h1>{activity.name ?? activity.iri}</h1>
@@ -165,18 +227,18 @@ dashboardRoutes.get("/activity", async (c) => {
         <a href={`/dashboard/activity.json?iri=${encodeURIComponent(iri)}`}>Download JSON</a>
       </p>
       <div class="prax-stats">
+        <StatCard label="Completion rate" value={completionPct} sub={completionSub} hero />
         <StatCard label="Attempts" value={String(stats.attempts)} />
-        <StatCard label="Completed" value={String(stats.completions)} />
-        <StatCard label="Avg score" value={avgPct} />
-        <StatCard label="Median time" value={formatDuration(median(stats.durationsSec))} />
+        <StatCard label={avgLabel} value={avgPct} />
+        <StatCard label={medianTime === null ? "No timing data" : "Median time"} value={formatDuration(medianTime)} />
       </div>
 
-      <h2>Attempts — last 30 days</h2>
-      {perDay.length === 0 ? (
-        <p class="prax-empty">No attempts in the last 30 days.</p>
+      <h2>Attempts — last 14 days</h2>
+      {!hasRenderedAttempts ? (
+        <p class="prax-empty">No attempts in the last 14 days.</p>
       ) : (
         <div class="prax-bars">
-          {perDay.map((d) => (
+          {renderedDays.map((d) => (
             <div class="prax-bar">
               <span>{d.day.slice(5)}</span>
               <div class="fill" aria-hidden="true" style={`width:${Math.round((d.count / maxDay) * 100)}%`}></div>
@@ -187,7 +249,7 @@ dashboardRoutes.get("/activity", async (c) => {
       )}
 
       {funnel.length > 0 ? (
-        <FunnelSection started={started} finished={stats.completions} steps={funnel} />
+        <FunnelSection started={started} finished={stats.completions} steps={funnel} labels={stepLabels} />
       ) : (
         <>
           <h2>Drop-off funnel</h2>
@@ -214,7 +276,7 @@ dashboardRoutes.get("/activity", async (c) => {
               <tr>
                 <td>
                   <a href={`/dashboard/learner?id=${encodeURIComponent(r.learnerId)}&iri=${encodeURIComponent(iri)}`}>
-                    {r.label}
+                    {displayLabel(r.label)}
                   </a>
                 </td>
                 <td>
@@ -353,9 +415,11 @@ dashboardRoutes.get("/learner", async (c) => {
     );
   }
   const [activity, timeline] = await Promise.all([s.getActivity(iri), s.learnerTimeline(iri, id)]);
+  const learnerLabel = displayLabel(learner.label);
   return c.html(
-    <Layout title={learner.label}>
-      <h1>{learner.label}</h1>
+    <Layout title={learnerLabel}>
+      <h1>{learnerLabel}</h1>
+      <p class="prax-soft">{learner.identity}</p>
       <p>
         <a href={`/dashboard/activity?iri=${encodeURIComponent(iri)}`}>
           ← {activity?.name ?? iri}

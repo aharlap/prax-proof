@@ -229,6 +229,26 @@ export class D1Storage implements Storage {
     return results.map((r) => ({ step: r.step, learners: r.learners, firstSeen: r.first_seen }));
   }
 
+  async stepLabels(iri: string): Promise<Record<string, string>> {
+    const prefix = `${iri}/steps/`;
+    const { results } = await this.db
+      .prepare("SELECT iri, name FROM activities WHERE name IS NOT NULL AND substr(iri, 1, ?1) = ?2")
+      .bind(prefix.length, prefix)
+      .all<{ iri: string; name: string }>();
+    const labels: Record<string, string> = {};
+    for (const r of results) {
+      const raw = r.iri.slice(prefix.length);
+      let key = raw;
+      try {
+        key = decodeURIComponent(raw);
+      } catch {
+        key = raw;
+      }
+      labels[key] = r.name;
+    }
+    return labels;
+  }
+
   async startedLearners(iri: string): Promise<number> {
     const r = await this.db
       .prepare(
@@ -242,9 +262,9 @@ export class D1Storage implements Storage {
 
   async getLearner(learnerId: string) {
     const r = await this.db
-      .prepare("SELECT id, COALESCE(display_name, identity) AS label FROM learners WHERE id = ?")
+      .prepare("SELECT id, identity, COALESCE(display_name, identity) AS label FROM learners WHERE id = ?")
       .bind(learnerId)
-      .first<{ id: string; label: string }>();
+      .first<{ id: string; identity: string; label: string }>();
     return r ?? null;
   }
 

@@ -3,6 +3,7 @@ import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { D1Storage } from "../src/storage/d1";
 import type { StatementRow } from "../src/storage/types";
+import { ingestStatements } from "../src/xapi/ingest";
 
 const row = (id: string, over: Partial<StatementRow> = {}): StatementRow => ({
   id,
@@ -72,5 +73,31 @@ describe("D1Storage", () => {
     const r = await env.DB.prepare("SELECT name FROM activities WHERE iri = ?")
       .bind("https://example.org/act/rename").first<{ name: string }>();
     expect(r?.name).toBe("Typo'd Title (fixed)");
+  });
+
+  it("returns decoded step labels from named child activities", async () => {
+    const s = new D1Storage(env.DB);
+    const parent = "https://example.org/act/step-labels";
+    await ingestStatements(s, [
+      {
+        actor: { account: { homePage: "https://proof.test", name: "step-label-a" } },
+        verb: { id: "http://adlnet.gov/expapi/verbs/progressed" },
+        object: { id: `${parent}/steps/q%3Aq2`, definition: { name: { en: "Question 2" } } },
+        timestamp: "2026-07-05T10:00:00Z",
+      },
+      {
+        actor: { account: { homePage: "https://proof.test", name: "step-label-a" } },
+        verb: { id: "http://adlnet.gov/expapi/verbs/progressed" },
+        object: { id: `${parent}/steps/wrap-up`, definition: { name: { en: "Wrap-up Summary" } } },
+        timestamp: "2026-07-05T10:01:00Z",
+      },
+    ]);
+
+    await s.upsertActivity(`${parent}/steps/nameless`, null);
+
+    expect(await s.stepLabels(parent)).toEqual({
+      "q:q2": "Question 2",
+      "wrap-up": "Wrap-up Summary",
+    });
   });
 });

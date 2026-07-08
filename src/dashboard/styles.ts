@@ -56,6 +56,9 @@ td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--prax-color-line); }
   box-shadow: var(--prax-offset-shadow); }
 .prax-stat b { display: block; font-size: 1.6rem; }
 .prax-stat span { font-size: 0.8rem; color: var(--prax-color-ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+.prax-stat-hero { box-shadow: 3px 3px 0 var(--prax-color-pink-soft); }
+.prax-stat-hero b { font-size: 2.4rem; }
+.prax-stat .prax-sub { display:block; font-size: 0.8rem; color: var(--prax-color-ink-soft); text-transform: none; letter-spacing: 0; margin-top: 0.25rem; }
 .prax-badge { display: inline-block; font-size: 0.78rem; font-weight: 600;
   padding: 0.1rem 0.6rem; border-radius: 999px; }
 .prax-badge.done { background: var(--prax-color-accent-soft); color: var(--prax-color-ink); }
@@ -63,6 +66,10 @@ td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--prax-color-line); }
 .prax-bars { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
 .prax-bar { display: grid; grid-template-columns: 7rem 1fr auto; gap: 0.75rem; align-items: center; font-size: 0.85rem; }
 .prax-bar .fill { background: var(--prax-color-accent); height: 1rem; border-radius: 3px; min-width: 2px; }
+.prax-track { width: 9rem; height: 0.9rem; background: var(--prax-color-line); border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 0.5rem; }
+.prax-track-fill { height: 100%; background: var(--prax-color-accent); border-radius: 3px; min-width: 2px; }
+.prax-drop-row td { background: var(--prax-color-pink-soft); }
+.prax-soft { color: var(--prax-color-ink-soft); }
 .prax-empty { background: var(--prax-color-surface); border: 1px dashed var(--prax-color-line);
   border-radius: var(--prax-radius); padding: 2rem; text-align: center; color: var(--prax-color-ink-soft); }
 `;

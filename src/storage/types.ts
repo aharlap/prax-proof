@@ -88,8 +88,9 @@ export interface Storage {
   listRoster(iri: string): Promise<RosterRow[]>;
   attemptsPerDay(iri: string, days: number): Promise<DayCount[]>;
   stepFunnel(iri: string): Promise<FunnelStep[]>;
+  stepLabels(iri: string): Promise<Record<string, string>>;
   startedLearners(iri: string): Promise<number>;
-  getLearner(learnerId: string): Promise<{ id: string; label: string } | null>;
+  getLearner(learnerId: string): Promise<{ id: string; label: string; identity: string } | null>;
   learnerTimeline(iri: string, learnerId: string): Promise<TimelineRow[]>;
   rawStatements(iri: string): Promise<string[]>;
 }

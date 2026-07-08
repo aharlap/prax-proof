@@ -84,4 +84,30 @@ describe("learner detail", () => {
     expect(html).not.toContain("✓ correct");
     expect(html).not.toContain("✗ incorrect");
   });
+
+  it("renders UUID-labeled learners as anonymous while preserving the raw identity", async () => {
+    const iri = "https://example.org/x/anonymous-uuid";
+    const uuid = "12345678-90ab-4cde-8f12-1234567890ab";
+    const s = new D1Storage(env.DB);
+    const ingested = await ingestStatements(s, {
+      actor: { account: { homePage: "https://proof.test", name: uuid } },
+      verb: { id: "http://adlnet.gov/expapi/verbs/initialized" },
+      object: { id: iri, definition: { name: { en: "Anonymous UUID Activity" } } },
+      timestamp: "2026-07-03T12:00:00Z",
+    });
+    expect(ingested.ok).toBe(true);
+    const row = await env.DB
+      .prepare("SELECT id FROM learners WHERE identity = ?")
+      .bind(`https://proof.test|${uuid}`)
+      .first<{ id: string }>();
+
+    const res = await SELF.fetch(
+      `https://proof.test/dashboard/learner?id=${row!.id}&iri=${encodeURIComponent(iri)}`,
+      { headers: ADMIN },
+    );
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Anonymous · 1234");
+    expect(html).toContain(uuid);
+  });
 });
