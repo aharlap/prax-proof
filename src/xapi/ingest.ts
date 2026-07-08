@@ -3,6 +3,8 @@ import type { Storage } from "../storage/types";
 import { activityName, extractColumns, extractPage, learnerIdentity } from "./extract";
 import { parseStatements } from "./validate";
 
+const isChildIri = (iri: string) => ["/steps/", "/q/", "/questions/"].some((s) => iri.includes(s));
+
 export async function ingestStatements(
   storage: Storage,
   body: unknown,
@@ -21,7 +23,11 @@ export async function ingestStatements(
 
     const columns = extractColumns(stmt, id, stored);
     if (columns.activityIri) {
-      await storage.upsertActivity(columns.activityIri, activityName(stmt), extractPage(stmt));
+      await storage.upsertActivity(
+        columns.activityIri,
+        activityName(stmt),
+        isChildIri(columns.activityIri) ? null : extractPage(stmt),
+      );
     }
     const { identity, displayName } = learnerIdentity(stmt.actor);
     const learnerId = await storage.upsertLearner(identity, displayName);

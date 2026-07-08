@@ -31,6 +31,30 @@ describe("dashboard shell", () => {
 });
 
 const LIST_IRI = "https://example.org/x/list-quiz";
+const VERSION = { "X-Experience-API-Version": "1.0.3" };
+
+async function mintIngestAuth(label: string): Promise<string> {
+  const res = await SELF.fetch("https://proof.test/admin/keys", {
+    method: "POST",
+    headers: { ...ADMIN, "Content-Type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+  expect(res.status).toBe(201);
+  const key = (await res.json()) as { id: string; secret: string };
+  return "Basic " + btoa(`${key.id}:${key.secret}`);
+}
+
+async function postStatement(auth: string, body: unknown): Promise<Response> {
+  return SELF.fetch("https://proof.test/xapi/statements", {
+    method: "POST",
+    headers: {
+      Authorization: auth,
+      ...VERSION,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
 
 describe("activity list", () => {
   it("lists parent activities with counts and links, excluding children", async () => {
@@ -123,6 +147,7 @@ describe("activity detail", () => {
       `https://proof.test/dashboard/activity?iri=${encodeURIComponent(iri)}`,
       { headers: ADMIN },
     );
+    expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Completion rate");
     expect(html).toContain("50%");
@@ -161,5 +186,54 @@ describe("activity detail", () => {
     );
     const withoutHtml = await withoutRes.text();
     expect(withoutHtml).not.toContain("View live page");
+  });
+
+  it("drops unsafe page extensions posted through the xAPI endpoint", async () => {
+    const auth = await mintIngestAuth("dashboard unsafe page regression");
+    const iri = `https://example.org/x/unsafe-page-${crypto.randomUUID()}`;
+
+    const post = await postStatement(auth, {
+      actor: { account: { homePage: "https://proof.test", name: "unsafe-page-learner" } },
+      verb: { id: "http://adlnet.gov/expapi/verbs/initialized" },
+      object: { id: iri, definition: { name: { en: "Unsafe Page Regression" } } },
+      context: {
+        extensions: { "https://praxity.io/xapi/ext/page": "javascript:alert(1)" },
+      },
+    });
+    expect(post.status).toBe(200);
+
+    const res = await SELF.fetch(
+      `https://proof.test/dashboard/activity?iri=${encodeURIComponent(iri)}`,
+      { headers: ADMIN },
+    );
+    const html = await res.text();
+    expect(html).not.toContain("javascript:alert");
+    expect(html).not.toContain("View live page");
+
+    const row = await env.DB.prepare("SELECT page_url FROM activities WHERE iri = ?")
+      .bind(iri)
+      .first<{ page_url: string | null }>();
+    expect(row?.page_url).toBeNull();
+  });
+
+  it("does not set page_url on child pseudo-activities posted through the xAPI endpoint", async () => {
+    const auth = await mintIngestAuth("dashboard child page regression");
+    const parent = `https://example.org/x/child-page-${crypto.randomUUID()}`;
+    const child = `${parent}/steps/x`;
+
+    const post = await postStatement(auth, {
+      actor: { account: { homePage: "https://proof.test", name: "child-page-learner" } },
+      verb: { id: "http://adlnet.gov/expapi/verbs/progressed" },
+      object: { id: child, definition: { name: { en: "Child Step X" } } },
+      context: {
+        extensions: { "https://praxity.io/xapi/ext/page": "https://learn.example/activity?token=secret#step" },
+      },
+    });
+    expect(post.status).toBe(200);
+
+    const row = await env.DB.prepare("SELECT page_url FROM activities WHERE iri = ?")
+      .bind(child)
+      .first<{ page_url: string | null }>();
+    expect(row?.page_url).toBeNull();
   });
 });
