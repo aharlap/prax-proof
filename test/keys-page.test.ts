@@ -4,6 +4,14 @@ import { describe, expect, it } from "vitest";
 import { ADMIN } from "./helpers";
 
 describe("keys page", () => {
+  it("explains what ingest keys are for", async () => {
+    const res = await SELF.fetch("https://proof.test/dashboard/keys", { headers: ADMIN });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Ingest keys let a page or app send learning events into Proof");
+    expect(html).toContain("Keys can write activity data only");
+  });
+
   it("mints a key via the form and shows the secret once", async () => {
     const res = await SELF.fetch("https://proof.test/dashboard/keys", {
       method: "POST",

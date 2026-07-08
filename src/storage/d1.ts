@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 import type { ActivityStats, ActivitySummary, DayCount, FunnelStep, KeyRecord, RosterRow, StatementRow, Storage, TimelineRow } from "./types";
 
-export function likePrefix(iri: string): string {
-  return iri.replace(/[\\%_]/g, (ch) => `\\${ch}`) + "/%";
+function childPrefix(iri: string): string {
+  return `${iri}/`;
 }
 
 export class D1Storage implements Storage {
@@ -172,6 +172,7 @@ export class D1Storage implements Storage {
   }
 
   async listRoster(iri: string): Promise<RosterRow[]> {
+    const prefix = childPrefix(iri);
     const { results } = await this.db
       .prepare(
         `SELECT l.id, COALESCE(l.display_name, l.identity) AS label,
@@ -184,11 +185,11 @@ export class D1Storage implements Storage {
               ORDER BY s2.timestamp DESC, s2.stored DESC LIMIT 1) AS score_max,
            MAX(s.timestamp) AS last_seen
          FROM statements s JOIN learners l ON l.id = s.learner_id
-         WHERE s.activity_iri = ?1 OR s.activity_iri LIKE ?2 ESCAPE '\\'
+         WHERE s.activity_iri = ?1 OR substr(s.activity_iri, 1, ?2) = ?3
          GROUP BY l.id, label
          ORDER BY last_seen DESC`,
       )
-      .bind(iri, likePrefix(iri))
+      .bind(iri, prefix.length, prefix)
       .all<Record<string, unknown>>();
     return results.map((r) => ({
       learnerId: r.id as string,
@@ -215,14 +216,15 @@ export class D1Storage implements Storage {
   }
 
   async stepFunnel(iri: string): Promise<FunnelStep[]> {
+    const prefix = childPrefix(iri);
     const { results } = await this.db
       .prepare(
         `SELECT step, COUNT(DISTINCT learner_id) AS learners, MIN(timestamp) AS first_seen
          FROM statements
-         WHERE (activity_iri = ?1 OR activity_iri LIKE ?2 ESCAPE '\\') AND step IS NOT NULL
+         WHERE (activity_iri = ?1 OR substr(activity_iri, 1, ?2) = ?3) AND step IS NOT NULL
          GROUP BY step ORDER BY first_seen`,
       )
-      .bind(iri, likePrefix(iri))
+      .bind(iri, prefix.length, prefix)
       .all<{ step: string; learners: number; first_seen: string }>();
     return results.map((r) => ({ step: r.step, learners: r.learners, firstSeen: r.first_seen }));
   }
@@ -247,26 +249,28 @@ export class D1Storage implements Storage {
   }
 
   async rawStatements(iri: string): Promise<string[]> {
+    const prefix = childPrefix(iri);
     const { results } = await this.db
       .prepare(
-        `SELECT raw FROM statements WHERE activity_iri = ?1 OR activity_iri LIKE ?2 ESCAPE '\\'
+        `SELECT raw FROM statements WHERE activity_iri = ?1 OR substr(activity_iri, 1, ?2) = ?3
          ORDER BY timestamp ASC`,
       )
-      .bind(iri, likePrefix(iri))
+      .bind(iri, prefix.length, prefix)
       .all<{ raw: string }>();
     return results.map((r) => r.raw);
   }
 
   async learnerTimeline(iri: string, learnerId: string): Promise<TimelineRow[]> {
+    const prefix = childPrefix(iri);
     const { results } = await this.db
       .prepare(
         `SELECT timestamp, verb, activity_iri, step, response, success, completion,
                 score_raw, score_max, duration_sec
          FROM statements
-         WHERE learner_id = ?1 AND (activity_iri = ?2 OR activity_iri LIKE ?3 ESCAPE '\\')
+         WHERE learner_id = ?1 AND (activity_iri = ?2 OR substr(activity_iri, 1, ?3) = ?4)
          ORDER BY timestamp ASC, stored ASC`,
       )
-      .bind(learnerId, iri, likePrefix(iri))
+      .bind(learnerId, iri, prefix.length, prefix)
       .all<Record<string, unknown>>();
     return results.map((r) => ({
       timestamp: r.timestamp as string,

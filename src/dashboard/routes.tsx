@@ -243,6 +243,13 @@ function KeysPage(props: {
   return (
     <Layout title="Keys">
       <h1>Ingest keys</h1>
+      <p>
+        Ingest keys let a page or app send learning events into Proof. Use one key per
+        site, course, or tool so results can be traced and rotated later.
+      </p>
+      <p>
+        Keys can write activity data only; they cannot read dashboard data.
+      </p>
       {props.minted ? (
         <div class="prax-stat">
           <p>

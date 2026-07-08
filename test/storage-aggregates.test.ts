@@ -113,4 +113,45 @@ describe("storage aggregates", () => {
     expect(roster[0].scoreRaw).toBe(8);
     expect(roster[0].scoreMax).toBe(8);
   });
+
+  it("includes child statements for URL-shaped parent activity IRIs", async () => {
+    const parent = "https://prax-proof.aharlap.workers.dev/a/local-url-parent";
+    const actor = { account: { homePage: "https://proof.test", name: "url-parent-learner" } };
+    const s = new D1Storage(env.DB);
+
+    await ingestStatements(s, [
+      {
+        actor,
+        verb: { id: `${V}initialized` },
+        object: { id: parent, definition: { name: { en: "URL Parent" } } },
+        timestamp: "2026-07-04T10:00:00Z",
+      },
+      {
+        actor,
+        verb: { id: `${V}progressed` },
+        object: { id: `${parent}/steps/scenario` },
+        timestamp: "2026-07-04T10:01:00Z",
+      },
+      {
+        actor,
+        verb: { id: `${V}answered` },
+        object: { id: `${parent}/q/realities` },
+        result: { response: "constraints" },
+        timestamp: "2026-07-04T10:02:00Z",
+      },
+    ]);
+
+    const roster = await s.listRoster(parent);
+    expect(roster).toHaveLength(1);
+    expect(roster[0].lastSeen.startsWith("2026-07-04T10:02")).toBe(true);
+
+    const funnel = await s.stepFunnel(parent);
+    expect(funnel.map((row) => row.step)).toContain("scenario");
+
+    const raws = await s.rawStatements(parent);
+    expect(raws).toHaveLength(3);
+
+    const timeline = await s.learnerTimeline(parent, roster[0].learnerId);
+    expect(timeline.map((row) => row.activityIri)).toContain(`${parent}/q/realities`);
+  });
 });
