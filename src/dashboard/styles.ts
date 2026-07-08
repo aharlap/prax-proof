@@ -12,7 +12,7 @@ export const DASHBOARD_CSS = `
   --prax-color-accent-soft: #D6F3EC;
   --prax-color-warn: #8A4B00;
   --prax-color-warn-soft: #FFF6BF;
-  --prax-color-focus: #1D4ED8;
+  --prax-color-focus: #1D4ED8; /* deliberately NOT the accent: focus rings must contrast with adjacent teal ink, not blend with it */
   --prax-color-accent-2: #00C9A7;
   --prax-color-accent-3: #FF48B0;
   --prax-color-pink-soft: #FFE0F1;
