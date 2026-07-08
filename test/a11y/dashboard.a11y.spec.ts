@@ -42,6 +42,11 @@ test("landing page has no axe violations", async ({ page }) => {
   await expectNoViolations(page);
 });
 
+test("about page has no axe violations", async ({ page }) => {
+  await page.goto("/about");
+  await expectNoViolations(page);
+});
+
 test("activity list has no axe violations", async ({ page }) => {
   await page.goto("/dashboard");
   await expectNoViolations(page);

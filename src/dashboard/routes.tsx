@@ -149,12 +149,13 @@ function FunnelSection(props: {
 }
 
 dashboardRoutes.get("/", async (c) => {
-  const activities = await new D1Storage(c.env.DB).listActivities();
+  const s = new D1Storage(c.env.DB);
+  const [activities, keys] = await Promise.all([s.listActivities(), s.listKeys()]);
   return c.html(
     <Layout title="Activities">
       <h1>Activities</h1>
       {activities.length === 0 ? (
-        <p class="prax-empty">No activities yet. Send a statement and it appears here.</p>
+        <ActivitiesEmptyState hasKeys={keys.length > 0} />
       ) : (
         <table>
           <caption>All tracked activities, most recent first</caption>
@@ -185,6 +186,18 @@ dashboardRoutes.get("/", async (c) => {
     </Layout>,
   );
 });
+
+export function ActivitiesEmptyState(props: { hasKeys: boolean }) {
+  return props.hasKeys ? (
+    <p class="prax-empty">
+      Waiting for your first statement. Embed the snippet on a page (see the <a href="https://github.com/aharlap/prax-proof/blob/main/docs/embed.md">embed guide</a>) or use the AI prompt from your <a href="/dashboard/keys">key page</a>.
+    </p>
+  ) : (
+    <p class="prax-empty">
+      No activity yet. Start by creating an ingest key on the <a href="/dashboard/keys">Keys page</a>.
+    </p>
+  );
+}
 
 dashboardRoutes.get("/activity", async (c) => {
   const iri = c.req.query("iri");
@@ -303,7 +316,7 @@ dashboardRoutes.get("/activity", async (c) => {
   );
 });
 
-function KeysPage(props: {
+export function KeysPage(props: {
   keys: { id: string; label: string; createdAt: string }[];
   minted?: { id: string; secret: string; label: string };
   origin: string;
@@ -329,7 +342,14 @@ function KeysPage(props: {
           <pre>
             <code>{`<script src="${props.origin}/p.js"\n        data-activity="my-activity"\n        data-key="${props.minted.id}:${props.minted.secret}"\n        data-identity="ask"></script>`}</code>
           </pre>
+          <p>Or paste this prompt into your AI builder (Claude, ChatGPT, Gemini):</p>
+          <pre>
+            <code>Add Proof learning tracking to my page. Fetch {props.origin}/llms.txt and follow its instructions exactly. Use data-key="{props.minted.id}:{props.minted.secret}" and pick a short kebab-case data-activity slug plus a human data-name for this activity.</code>
+          </pre>
         </div>
+      ) : null}
+      {props.keys.length === 0 ? (
+        <p class="prax-empty">No keys yet — create your first key below, then Proof hands you everything to paste into your page or AI builder.</p>
       ) : null}
       <form method="post" action="/dashboard/keys">
         <label for="label">Label for the new key</label>{" "}

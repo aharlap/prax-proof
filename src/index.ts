@@ -9,6 +9,7 @@ import { D1Storage } from "./storage/d1";
 import { rateLimit } from "./ratelimit";
 import { ingestStatements } from "./xapi/ingest";
 import { LLMS_TXT } from "./llms";
+import { aboutHandler } from "./about";
 import { landingHandler } from "./landing";
 import { DASHBOARD_CSS } from "./dashboard/styles";
 import { dashboardRoutes } from "./dashboard/routes";
@@ -39,6 +40,7 @@ app.get("/p.js", (c) =>
 );
 
 app.get("/", landingHandler);
+app.get("/about", aboutHandler);
 
 app.get("/llms.txt", (c) => {
   const origin = new URL(c.req.url).origin;

@@ -16,12 +16,11 @@ export function Landing() {
         <main id="main">
           <h1>Proof</h1>
           <p>
-            A free, open-source results tracker for learning activities. Proof implements an honest subset of xAPI 1.0.3 — the Statements resource only — and is not a conformant LRS.
+            This site collects learning results for activities its owner runs. Learner data stays on the owner's own Cloudflare account.
           </p>
           <ul>
             <li><a href="/dashboard">Dashboard</a></li>
-            <li><a href="/llms.txt">Instructions for AI builders</a></li>
-            <li><a href="https://github.com/aharlap/prax-proof">Source on GitHub</a></li>
+            <li><a href="/about">About Proof</a></li>
           </ul>
         </main>
       </body>

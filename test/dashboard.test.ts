@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { env, SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import { ActivitiesEmptyState } from "../src/dashboard/routes";
 import { D1Storage } from "../src/storage/d1";
 import { ingestStatements } from "../src/xapi/ingest";
 import { bridgeSession } from "./fixtures/bridge-session";
@@ -57,6 +58,19 @@ async function postStatement(auth: string, body: unknown): Promise<Response> {
 }
 
 describe("activity list", () => {
+  it("renders the no-key onboarding empty state", () => {
+    const html = ActivitiesEmptyState({ hasKeys: false }).toString();
+    expect(html).toContain("creating an ingest key");
+    expect(html).toContain('href="/dashboard/keys"');
+  });
+
+  it("renders the waiting-for-statements onboarding empty state when keys exist", () => {
+    const html = ActivitiesEmptyState({ hasKeys: true }).toString();
+    expect(html).toContain("Waiting for your first statement");
+    expect(html).toContain('href="https://github.com/aharlap/prax-proof/blob/main/docs/embed.md"');
+    expect(html).toContain('href="/dashboard/keys"');
+  });
+
   it("lists parent activities with counts and links, excluding children", async () => {
     await ingestStatements(
       new D1Storage(env.DB),
