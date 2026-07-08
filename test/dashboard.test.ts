@@ -128,4 +128,38 @@ describe("activity detail", () => {
     expect(html).toContain("50%");
     expect(html).toContain("1 of 2 learners");
   });
+
+  it("renders a live page link only when an activity has page_url", async () => {
+    const s = new D1Storage(env.DB);
+    const withPage = "https://example.org/x/page-link-present";
+    const withoutPage = "https://example.org/x/page-link-absent";
+    await ingestStatements(s, [
+      {
+        actor: { account: { homePage: "https://proof.test", name: "page-link-a" } },
+        verb: { id: "http://adlnet.gov/expapi/verbs/initialized" },
+        object: { id: withPage, definition: { name: { en: "Page Link Present" } } },
+        context: { extensions: { "https://praxity.io/xapi/ext/page": "https://learn.example/activity?token=abc#part" } },
+      },
+      {
+        actor: { account: { homePage: "https://proof.test", name: "page-link-b" } },
+        verb: { id: "http://adlnet.gov/expapi/verbs/initialized" },
+        object: { id: withoutPage, definition: { name: { en: "Page Link Absent" } } },
+      },
+    ]);
+
+    const withRes = await SELF.fetch(
+      `https://proof.test/dashboard/activity?iri=${encodeURIComponent(withPage)}`,
+      { headers: ADMIN },
+    );
+    const withHtml = await withRes.text();
+    expect(withHtml).toContain("View live page");
+    expect(withHtml).toContain('href="https://learn.example/activity"');
+
+    const withoutRes = await SELF.fetch(
+      `https://proof.test/dashboard/activity?iri=${encodeURIComponent(withoutPage)}`,
+      { headers: ADMIN },
+    );
+    const withoutHtml = await withoutRes.text();
+    expect(withoutHtml).not.toContain("View live page");
+  });
 });

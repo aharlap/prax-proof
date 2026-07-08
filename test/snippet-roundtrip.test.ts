@@ -14,6 +14,7 @@ const ctx: SnippetContext = {
   activityName: "roundtrip-quiz",
   actor: { account: { homePage: "https://proof.test", name: "device-rt-1" }, name: "Rita T." },
   registration: "99999999-9999-4999-8999-999999999999",
+  page: "https://learn.example/roundtrip",
 };
 
 beforeAll(async () => {
@@ -58,6 +59,12 @@ describe("snippet → server roundtrip", () => {
     const finish = await s.getStatement(ids[3]);
     expect(finish?.completion).toBe(1);
     expect(finish?.scoreScaled).toBe(0.8);
+
+    const activity = await env.DB
+      .prepare("SELECT page_url FROM activities WHERE iri = ?")
+      .bind(ctx.activityIri)
+      .first<{ page_url: string }>();
+    expect(activity?.page_url).toBe(ctx.page);
 
     const learner = await env.DB
       .prepare("SELECT display_name FROM learners WHERE identity = ?")

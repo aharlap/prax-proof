@@ -83,6 +83,24 @@ describe("statement builders", () => {
     const s = buildStep(ctx, "section-2") as Record<string, any>;
     expect(s.verb.id).toBe("http://adlnet.gov/expapi/verbs/progressed");
     expect(s.object.id).toBe("https://proof.example/a/fractions-quiz/steps/section-2");
+    expect(s.object.definition).toBeUndefined();
+  });
+
+  it("buildStep with a label emits a child activity name", () => {
+    const s = buildStep(ctx, "section-2", "Section 2 — Practice") as Record<string, any>;
+    expect(s.object.definition.name.en).toBe("Section 2 — Practice");
+  });
+
+  it("base statements carry the page extension when ctx.page is set", () => {
+    const s = buildStart({ ...ctx, page: "https://learn.example/fractions" }) as Record<string, any>;
+    expect(s.context.extensions).toEqual({
+      "https://praxity.io/xapi/ext/page": "https://learn.example/fractions",
+    });
+  });
+
+  it("base statements omit context extensions when ctx.page is not set", () => {
+    const s = buildStart(ctx) as Record<string, any>;
+    expect(s.context.extensions).toBeUndefined();
   });
 
   it("buildAnswer emits answered with success and response", () => {

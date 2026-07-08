@@ -78,12 +78,12 @@ export interface Storage {
   createKey(id: string, secretHash: string, label: string): Promise<void>;
   findKey(id: string): Promise<KeyRecord | null>;
   listKeys(): Promise<{ id: string; label: string; createdAt: string }[]>;
-  upsertActivity(iri: string, name: string | null): Promise<void>;
+  upsertActivity(iri: string, name: string | null, pageUrl?: string | null): Promise<void>;
   upsertLearner(identity: string, displayName: string | null): Promise<string>;
   insertStatements(rows: StatementRow[]): Promise<string[]>;
   getStatement(id: string): Promise<StatementRow | null>;
   listActivities(): Promise<ActivitySummary[]>;
-  getActivity(iri: string): Promise<{ iri: string; name: string | null; firstSeen: string } | null>;
+  getActivity(iri: string): Promise<{ iri: string; name: string | null; pageUrl: string | null; firstSeen: string } | null>;
   getActivityStats(iri: string): Promise<ActivityStats>;
   listRoster(iri: string): Promise<RosterRow[]>;
   attemptsPerDay(iri: string, days: number): Promise<DayCount[]>;

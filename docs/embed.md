@@ -13,15 +13,21 @@ anything that can run a script tag.
 ```html
 <script src="https://YOUR-INSTANCE/p.js"
         data-activity="fractions-quiz"
+        data-name="Fractions Quiz"
         data-key="KEY_ID:KEY_SECRET"
         data-identity="ask"></script>
 <script>
   proof.start();
-  proof.step("section-2");
+  proof.step("section-2", "Section 2 — Practice");
   proof.answer("q1", { response: "B", correct: true });
   proof.finish({ score: 8, max: 10 });
 </script>
 ```
+
+`data-name` is an optional human title shown on the dashboard. `proof.step(id, label?)`
+accepts an optional label for the dashboard funnel. The snippet also reports the
+page URL as origin + path only, never query strings or hashes, so the dashboard
+can link to the live page.
 
 ## Identity modes (`data-identity`)
 

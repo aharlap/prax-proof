@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import type { Storage } from "../storage/types";
-import { activityName, extractColumns, learnerIdentity } from "./extract";
+import { activityName, extractColumns, extractPage, learnerIdentity } from "./extract";
 import { parseStatements } from "./validate";
 
 export async function ingestStatements(
@@ -21,7 +21,7 @@ export async function ingestStatements(
 
     const columns = extractColumns(stmt, id, stored);
     if (columns.activityIri) {
-      await storage.upsertActivity(columns.activityIri, activityName(stmt));
+      await storage.upsertActivity(columns.activityIri, activityName(stmt), extractPage(stmt));
     }
     const { identity, displayName } = learnerIdentity(stmt.actor);
     const learnerId = await storage.upsertLearner(identity, displayName);

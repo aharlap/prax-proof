@@ -75,6 +75,21 @@ describe("D1Storage", () => {
     expect(r?.name).toBe("Typo'd Title (fixed)");
   });
 
+  it("upsertActivity keeps the latest non-null page_url", async () => {
+    const s = new D1Storage(env.DB);
+    const iri = "https://example.org/act/page-url";
+    await s.upsertActivity(iri, "Page URL", "https://learn.example/old");
+    await s.upsertActivity(iri, null, null);
+    let r = await env.DB.prepare("SELECT page_url FROM activities WHERE iri = ?")
+      .bind(iri).first<{ page_url: string }>();
+    expect(r?.page_url).toBe("https://learn.example/old");
+
+    await s.upsertActivity(iri, null, "https://learn.example/new");
+    r = await env.DB.prepare("SELECT page_url FROM activities WHERE iri = ?")
+      .bind(iri).first<{ page_url: string }>();
+    expect(r?.page_url).toBe("https://learn.example/new");
+  });
+
   it("returns decoded step labels from named child activities", async () => {
     const s = new D1Storage(env.DB);
     const parent = "https://example.org/act/step-labels";

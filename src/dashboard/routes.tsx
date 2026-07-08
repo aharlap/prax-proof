@@ -225,6 +225,12 @@ dashboardRoutes.get("/activity", async (c) => {
         <a href={`/dashboard/activity.csv?iri=${encodeURIComponent(iri)}`}>Download CSV</a>
         {" · "}
         <a href={`/dashboard/activity.json?iri=${encodeURIComponent(iri)}`}>Download JSON</a>
+        {activity.pageUrl ? (
+          <>
+            {" · "}
+            <a href={activity.pageUrl} rel="noopener">View live page ↗</a>
+          </>
+        ) : null}
       </p>
       <div class="prax-stats">
         <StatCard label="Completion rate" value={completionPct} sub={completionSub} hero />

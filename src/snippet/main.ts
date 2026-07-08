@@ -8,7 +8,7 @@ import {
 
 type ProofApi = {
   start(): void;
-  step(id: string): void;
+  step(id: string, label?: string): void;
   answer(id: string, opts?: { response?: string; correct?: boolean }): void;
   finish(result?: { score?: number; max?: number; min?: number }): void;
 };
@@ -27,6 +27,7 @@ type ProofApi = {
     const script = document.currentScript as HTMLScriptElement | null;
     if (!script?.src) return warn("cannot locate own script tag");
     const activity = script.getAttribute("data-activity");
+    const activityName = script.getAttribute("data-name");
     const key = script.getAttribute("data-key");
     if (!activity || !key) return warn("data-activity and data-key are required");
     const mode = (script.getAttribute("data-identity") ?? "anonymous") as IdentityMode;
@@ -47,9 +48,10 @@ type ProofApi = {
 
     const ctx: SnippetContext = {
       activityIri: `${origin}/a/${encodeURIComponent(activity)}`,
-      activityName: activity,
+      activityName: activityName ?? activity,
       actor,
       registration: crypto.randomUUID(),
+      page: `${location.origin}${location.pathname}`,
     };
 
     const send = (stmt: Record<string, unknown>) => {
@@ -76,7 +78,7 @@ type ProofApi = {
 
     (window as unknown as { proof: ProofApi }).proof = {
       start: guard(() => buildStart(ctx)),
-      step: guard((id: string) => buildStep(ctx, id)),
+      step: guard((id: string, label?: string) => buildStep(ctx, id, label)),
       answer: guard((id: string, opts?: { response?: string; correct?: boolean }) => buildAnswer(ctx, id, opts)),
       finish: guard((result?: { score?: number; max?: number; min?: number }) => buildFinish(ctx, result)),
     };

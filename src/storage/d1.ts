@@ -33,13 +33,15 @@ export class D1Storage implements Storage {
     return r ? { id: r.id, secretHash: r.secret_hash, label: r.label } : null;
   }
 
-  async upsertActivity(iri: string, name: string | null): Promise<void> {
+  async upsertActivity(iri: string, name: string | null, pageUrl?: string | null): Promise<void> {
     await this.db
       .prepare(
-        `INSERT INTO activities (iri, name) VALUES (?, ?)
-         ON CONFLICT(iri) DO UPDATE SET name = COALESCE(excluded.name, activities.name)`,
+        `INSERT INTO activities (iri, name, page_url) VALUES (?, ?, ?)
+         ON CONFLICT(iri) DO UPDATE SET
+           name = COALESCE(excluded.name, activities.name),
+           page_url = COALESCE(excluded.page_url, activities.page_url)`,
       )
-      .bind(iri, name)
+      .bind(iri, name, pageUrl ?? null)
       .run();
   }
 
@@ -140,10 +142,10 @@ export class D1Storage implements Storage {
 
   async getActivity(iri: string) {
     const r = await this.db
-      .prepare("SELECT iri, name, first_seen FROM activities WHERE iri = ?")
+      .prepare("SELECT iri, name, page_url, first_seen FROM activities WHERE iri = ?")
       .bind(iri)
-      .first<{ iri: string; name: string | null; first_seen: string }>();
-    return r ? { iri: r.iri, name: r.name, firstSeen: r.first_seen } : null;
+      .first<{ iri: string; name: string | null; page_url: string | null; first_seen: string }>();
+    return r ? { iri: r.iri, name: r.name, pageUrl: r.page_url, firstSeen: r.first_seen } : null;
   }
 
   async getActivityStats(iri: string): Promise<ActivityStats> {

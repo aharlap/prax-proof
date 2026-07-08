@@ -60,6 +60,7 @@ export interface SnippetContext {
   activityName: string;
   actor: Actor;
   registration: string;
+  page?: string;
 }
 
 function verb(id: string) {
@@ -67,11 +68,13 @@ function verb(id: string) {
 }
 
 function base(ctx: SnippetContext, verbId: string, object: Record<string, unknown>) {
+  const context: Record<string, unknown> = { registration: ctx.registration };
+  if (ctx.page) context.extensions = { "https://praxity.io/xapi/ext/page": ctx.page };
   return {
     actor: ctx.actor,
     verb: verb(verbId),
     object,
-    context: { registration: ctx.registration },
+    context,
     timestamp: new Date().toISOString(),
   };
 }
@@ -88,8 +91,11 @@ export function buildStart(ctx: SnippetContext): Record<string, unknown> {
   return base(ctx, VERBS.start, activityObject(ctx));
 }
 
-export function buildStep(ctx: SnippetContext, stepId: string): Record<string, unknown> {
-  return base(ctx, VERBS.step, childObject(ctx, "steps", stepId));
+export function buildStep(ctx: SnippetContext, stepId: string, label?: string): Record<string, unknown> {
+  const object: Record<string, unknown> = childObject(ctx, "steps", stepId);
+  const name = label?.trim();
+  if (name) object.definition = { name: { en: name } };
+  return base(ctx, VERBS.step, object);
 }
 
 export function buildAnswer(

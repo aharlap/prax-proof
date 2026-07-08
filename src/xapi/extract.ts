@@ -51,6 +51,7 @@ export function activityName(stmt: ValidStatement): string | null {
 
 const STEP_EXT = "https://praxity.io/xapi/ext/step";
 const STEP_IRI_RE = /\/steps\/([^/]+)$/;
+const PAGE_EXT = "https://praxity.io/xapi/ext/page";
 
 export function extractStep(stmt: ValidStatement): string | null {
   const objectId = (stmt.object as { id?: unknown }).id;
@@ -66,6 +67,18 @@ export function extractStep(stmt: ValidStatement): string | null {
   }
   const ext = (stmt.result as { extensions?: Record<string, unknown> } | undefined)?.extensions?.[STEP_EXT];
   return typeof ext === "string" ? ext : null;
+}
+
+export function extractPage(stmt: ValidStatement): string | null {
+  const raw = (stmt.context as { extensions?: Record<string, unknown> } | undefined)?.extensions?.[PAGE_EXT];
+  if (typeof raw !== "string") return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return null;
+  }
 }
 
 export function extractColumns(

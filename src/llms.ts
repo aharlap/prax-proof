@@ -9,25 +9,29 @@ functions. Do not add any other tracking code, SDK, or xAPI library.
 
 <script src="{{PROOF_ORIGIN}}/p.js"
         data-activity="my-activity-slug"
+        data-name="My Activity Title"
         data-key="KEY_ID:KEY_SECRET"
         data-identity="ask"></script>
 
 - data-activity: short stable slug for this activity (kebab-case).
+- data-name: optional human title shown on the dashboard.
 - data-key: the ingest key the instance owner minted (POST /admin/keys).
 - data-identity: "anonymous" (no names), "ask" (prompt for a name once),
   or "token" (identity read from a ?plearner=... link parameter).
+- The snippet reports the page URL as origin + path only, never query strings
+  or hashes, so the dashboard can link to the live page.
 
 ## 2. The four calls
 
 proof.start();                                        // when the activity begins
-proof.step("section-2");                              // each section/page reached
+proof.step("section-2", "Section 2 — Practice");      // each section/page reached
 proof.answer("q1", { response: "B", correct: true }); // each question answered
 proof.finish({ score: 8, max: 10 });                  // when the activity ends
 
 Rules:
 - Call start() once, as soon as your activity is ready.
-- Call step(id) with a short stable id every time the learner reaches a new
-  section — this powers the drop-off funnel.
+- Call step(id, label?) with a short stable id every time the learner reaches a
+  new section; the optional label names the step in the dashboard funnel.
 - Call answer(questionId, { response, correct }) on each answered question.
 - Call finish({ score, max }) exactly once at the end. Omit the score object
   if the activity is not scored: proof.finish().

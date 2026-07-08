@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
-import { activityName, extractColumns, learnerIdentity, parseDuration } from "../src/xapi/extract";
+import { activityName, extractColumns, extractPage, learnerIdentity, parseDuration } from "../src/xapi/extract";
 import type { ValidStatement } from "../src/xapi/validate";
 
 const base: ValidStatement = {
@@ -94,4 +94,30 @@ describe("activityName", () => {
     ).toBe("Quiz fractions"));
   it("returns null when object has no definition", () =>
     expect(activityName({ ...base, object: { id: "https://example.org/a" } })).toBeNull());
+});
+
+describe("extractPage", () => {
+  it("accepts https URLs and strips query and hash", () => {
+    expect(
+      extractPage({
+        ...base,
+        context: { extensions: { "https://praxity.io/xapi/ext/page": "https://x.y/p?tok=1#z" } },
+      }),
+    ).toBe("https://x.y/p");
+  });
+
+  it("rejects non-URL strings and javascript URLs", () => {
+    expect(
+      extractPage({
+        ...base,
+        context: { extensions: { "https://praxity.io/xapi/ext/page": "not a url" } },
+      }),
+    ).toBeNull();
+    expect(
+      extractPage({
+        ...base,
+        context: { extensions: { "https://praxity.io/xapi/ext/page": "javascript:alert(1)" } },
+      }),
+    ).toBeNull();
+  });
 });
