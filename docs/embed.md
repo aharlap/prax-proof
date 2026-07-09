@@ -66,8 +66,9 @@ The `data-key` value is visible to anyone who views your page source. That
 is by design, and it is *more* protection than the web-analytics norm:
 Plausible and Umami snippets carry no credential at all — just a public
 site identifier — and their ingest endpoints accept events from anyone who
-knows it. Proof requires the key, its API is write-only (no endpoint reads
-statements back with an ingest key), and every key is rate-limited. The
+knows it. Proof requires the key, ingest keys are write-only by construction
+(reading results requires a separate read key; see docs/api.md), and every key
+is rate-limited. The
 worst an exposed key allows is junk data, never reading results. Rotate a
 key by minting a new one and updating the page. A per-key origin allowlist
 (server-side, stricter than any snippet-level check) is on the roadmap.

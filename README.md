@@ -56,6 +56,10 @@ One script tag + four calls (`proof.start/step/answer/finish`) — see
 [docs/embed.md](docs/embed.md). AI builders: point them at your instance's
 `/llms.txt`, which contains paste-ready instructions.
 
+## Read your results (humans, scripts, AIs)
+
+Read keys are separate from ingest keys, so pages can write results without being able to read them back. The read API provides JSON summaries and paste-ready markdown reports; `llms.txt` documents those endpoints for AI builders, and [docs/api.md](docs/api.md) is the reference.
+
 ## Deploy
 
 See [docs/deploy.md](docs/deploy.md). Production instances must set the `ADMIN_PASSWORD` secret:

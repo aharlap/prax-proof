@@ -45,4 +45,13 @@ POST {{PROOF_ORIGIN}}/xapi/statements with HTTP Basic auth (key id:secret),
 header X-Experience-API-Version: 1.0.3, and an xAPI 1.0.3 statement body.
 Proof implements the Statements resource only (no document APIs, voiding,
 or attachments) and is not a conformant LRS.
+
+## Reading results back
+
+- Mint a READ key: use the Keys page or POST /admin/keys with {"label":"reader","kind":"read"}. Ingest keys cannot read; read keys cannot write.
+- Auth: either header works: Authorization: Bearer KEY_ID:KEY_SECRET or Basic base64(KEY_ID:KEY_SECRET).
+- List activities: curl -H "Authorization: Bearer KEY_ID:KEY_SECRET" "{{PROOF_ORIGIN}}/api/activities"
+- Compact JSON summary: curl -H "Authorization: Bearer KEY_ID:KEY_SECRET" "{{PROOF_ORIGIN}}/api/activity?slug=my-activity"
+- Markdown report: curl -H "Authorization: Bearer KEY_ID:KEY_SECRET" "{{PROOF_ORIGIN}}/api/activity.md?slug=my-activity"
+- Responses use xAPI interaction encodings; scores are raw/max plus scaled 0..1.
 `;
