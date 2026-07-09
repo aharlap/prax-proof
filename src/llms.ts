@@ -19,7 +19,12 @@ functions. Do not add any other tracking code, SDK, or xAPI library.
 - data-identity: "anonymous" (no names), "ask" (prompt for a name once),
   or "token" (identity read from a ?plearner=... link parameter).
 - data-h5p: add this attribute if the page hosts H5P content. Proof tracks it
-  automatically, no calls needed.
+  automatically, no calls needed. Two rules: (1) it works only when the H5P
+  content is hosted on the same site as the page (WordPress/Drupal plugins,
+  h5p-standalone, Lumi exports — NOT h5p.org cross-site iframe embeds);
+  (2) every H5P event on the page is recorded into this page's ONE
+  data-activity, so place one tracked H5P activity per page — multiple H5P
+  contents on the same page merge into a single report.
 - The snippet reports the page URL as origin + path only, never query strings
   or hashes, so the dashboard can link to the live page.
 

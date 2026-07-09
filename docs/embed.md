@@ -29,6 +29,32 @@ accepts an optional label for the dashboard funnel. The snippet also reports the
 page URL as origin + path only, never query strings or hashes, so the dashboard
 can link to the live page.
 
+## What Proof can — and can't — tell you
+
+In plain language, so you can decide if it fits before wiring anything up.
+
+**Proof can tell you:**
+
+- who started an activity and who finished it (and the completion rate)
+- scores and pass/fail, when the activity reports them
+- what each learner answered on each question
+- where learners stopped — the drop-off, step by step
+- which page the activity lives on, and when the activity happened
+
+**Proof can't tell you:**
+
+- who a learner *really* is — identity is honor-system (anonymous devices,
+  self-entered names, or links you hand out); it is evidence, not verification
+- what one learner did across different devices (anonymous identity is
+  per-browser)
+- anything inside the content it can't see — e.g. seconds of video watched —
+  unless the content reports it as an event
+- what someone wrote in a free-text or essay answer's *quality* — Proof
+  records responses, it doesn't grade them
+- Proof also doesn't *run* content: it can't resume/bookmark a learner's
+  place, deliver courses, or play SCORM packages. It observes; it is not
+  an LMS.
+
 ## Identity modes (`data-identity`)
 
 | Mode | Learner experience | Dashboard shows |

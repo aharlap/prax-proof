@@ -22,7 +22,7 @@ See who did your learning activity, how they scored, and where they dropped off 
 | Standards | Honest xAPI subset (statements only) | Full LRS + SCORM | Full conformant LRS | None |
 | Works with AI-built pages | One prompt (llms.txt) | Manual integration | Manual integration | Manual |
 
-Need a full conformant LRS? Use [lrsql](https://github.com/yetanalytics/lrsql) — Proof's statements export/forward cleanly. More in the [embed guide](docs/embed.md) and the honest fine print on every instance's /about page.
+Need a full conformant LRS? Use [lrsql](https://github.com/yetanalytics/lrsql) — Proof's statements export/forward cleanly. More in the [embed guide](docs/embed.md) and the honest fine print on every instance's /about page. Plain-language capabilities and limits: [what Proof can and can't tell you](docs/embed.md#what-proof-can--and-cant--tell-you).
 
 ## Status
 

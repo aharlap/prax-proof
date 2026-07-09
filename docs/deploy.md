@@ -2,7 +2,7 @@
 
 ## One-Click
 
-The Deploy to Cloudflare button parses this repo's Wrangler config, auto-provisions the D1 database, creates the deployer's own repo copy, and deploys.
+The Deploy to Cloudflare button parses this repo's Wrangler config, auto-provisions the D1 database, creates the deployer's own repo copy, and deploys. You do not need to fork first — the button does the copying. (If you do maintain a fork, update the button URL in your fork's README so it deploys your fork.)
 
 After deploy, set the admin password:
 
@@ -21,6 +21,13 @@ You can also set `ADMIN_PASSWORD` in the Cloudflare dashboard Variables UI.
 
 `pnpm run deploy` builds the snippet, deploys the Worker, lets Wrangler
 auto-provision the D1 database, then applies remote migrations.
+
+## First steps after deploying
+
+Open `https://YOUR-WORKER.workers.dev/dashboard` in a browser and sign in with
+username `admin` and the `ADMIN_PASSWORD` you set. Create your first key on
+the Keys page — the page hands you the embed snippet for your pages and a
+copy-paste prompt for AI builders. No command line is needed after deploy.
 
 ## EU Data Residency
 
