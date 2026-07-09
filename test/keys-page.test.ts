@@ -42,7 +42,25 @@ describe("keys page", () => {
     const list = await SELF.fetch("https://proof.test/dashboard/keys", { headers: ADMIN });
     const listHtml = await list.text();
     expect(listHtml).toContain("Form minted");
+    expect(listHtml).toContain("<th scope=\"col\">Kind</th>");
+    expect(listHtml).toContain("<td>ingest</td>");
     expect(listHtml).not.toMatch(/>[0-9a-f]{64}</); // secrets never listed
+  });
+
+  it("mints a read key via the form and shows read-only examples", async () => {
+    const res = await SELF.fetch("https://proof.test/dashboard/keys", {
+      method: "POST",
+      headers: { ...ADMIN, "Content-Type": "application/x-www-form-urlencoded", Origin: "https://proof.test" },
+      body: "label=Read+minted&kind=read",
+    });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Use this key to read results (it cannot write):");
+    expect(html).toContain("/api/activities");
+    expect(html).toContain("/api/activity.md?slug=my-activity");
+    expect(html).not.toContain("&lt;script src=");
+    expect(html).toContain("<th scope=\"col\">Kind</th>");
+    expect(html).toContain("<td>read</td>");
   });
 
   it("rejects cross-origin form posts", async () => {

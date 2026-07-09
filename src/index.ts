@@ -17,6 +17,7 @@ import { dashboardRoutes } from "./dashboard/routes";
 const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
 
 type Ctx = { Bindings: Env; Variables: { keyId: string } };
+type KeyKind = "ingest" | "read";
 
 const app = new Hono<Ctx>();
 
@@ -69,6 +70,11 @@ async function readJson(c: Context<Ctx>): Promise<unknown | undefined> {
   }
 }
 
+function parseKeyKind(raw: unknown): KeyKind | null {
+  if (raw === undefined) return "ingest";
+  return raw === "ingest" || raw === "read" ? raw : null;
+}
+
 app.post("/xapi/statements", requireVersion, keyAuth, rateLimit(120), async (c) => {
   const body = await readJson(c);
   if (body === undefined) {
@@ -107,8 +113,12 @@ app.post("/admin/keys", adminAuth, async (c) => {
   if (!label) {
     return c.json({ error: "A non-empty label string is required.", docs: ERROR_DOCS }, 400);
   }
-  const { id, secret } = await mintKey(c.env.DB, label);
-  return c.json({ id, secret, label }, 201);
+  const kind = parseKeyKind((body as { kind?: unknown } | undefined)?.kind);
+  if (!kind) {
+    return c.json({ error: 'Key kind must be "ingest" or "read".', docs: ERROR_DOCS }, 400);
+  }
+  const { id, secret } = await mintKey(c.env.DB, label, kind);
+  return c.json({ id, secret, label, kind }, 201);
 });
 
 app.get("/dashboard.css", (c) =>

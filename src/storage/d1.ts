@@ -11,26 +11,26 @@ export class D1Storage implements Storage {
   private static readonly CHILD_FILTER =
     "iri NOT LIKE '%/q/%' AND iri NOT LIKE '%/questions/%' AND iri NOT LIKE '%/steps/%'";
 
-  async createKey(id: string, secretHash: string, label: string): Promise<void> {
+  async createKey(id: string, secretHash: string, label: string, kind = "ingest"): Promise<void> {
     await this.db
-      .prepare("INSERT INTO keys (id, secret_hash, label) VALUES (?, ?, ?)")
-      .bind(id, secretHash, label)
+      .prepare("INSERT INTO keys (id, secret_hash, label, kind) VALUES (?, ?, ?, ?)")
+      .bind(id, secretHash, label, kind)
       .run();
   }
 
-  async listKeys(): Promise<{ id: string; label: string; createdAt: string }[]> {
+  async listKeys(): Promise<{ id: string; label: string; createdAt: string; kind: string }[]> {
     const { results } = await this.db
-      .prepare("SELECT id, label, created_at FROM keys ORDER BY created_at DESC")
-      .all<{ id: string; label: string; created_at: string }>();
-    return results.map((r) => ({ id: r.id, label: r.label, createdAt: r.created_at }));
+      .prepare("SELECT id, label, created_at, kind FROM keys ORDER BY created_at DESC")
+      .all<{ id: string; label: string; created_at: string; kind: string }>();
+    return results.map((r) => ({ id: r.id, label: r.label, createdAt: r.created_at, kind: r.kind }));
   }
 
   async findKey(id: string): Promise<KeyRecord | null> {
     const r = await this.db
-      .prepare("SELECT id, secret_hash, label FROM keys WHERE id = ?")
+      .prepare("SELECT id, secret_hash, label, kind FROM keys WHERE id = ?")
       .bind(id)
-      .first<{ id: string; secret_hash: string; label: string }>();
-    return r ? { id: r.id, secretHash: r.secret_hash, label: r.label } : null;
+      .first<{ id: string; secret_hash: string; label: string; kind: string }>();
+    return r ? { id: r.id, secretHash: r.secret_hash, label: r.label, kind: r.kind } : null;
   }
 
   async upsertActivity(iri: string, name: string | null, pageUrl?: string | null): Promise<void> {

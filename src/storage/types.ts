@@ -3,6 +3,7 @@ export interface KeyRecord {
   id: string;
   secretHash: string;
   label: string;
+  kind: string;
 }
 
 export interface StatementRow {
@@ -75,9 +76,9 @@ export interface TimelineRow {
 }
 
 export interface Storage {
-  createKey(id: string, secretHash: string, label: string): Promise<void>;
+  createKey(id: string, secretHash: string, label: string, kind?: string): Promise<void>;
   findKey(id: string): Promise<KeyRecord | null>;
-  listKeys(): Promise<{ id: string; label: string; createdAt: string }[]>;
+  listKeys(): Promise<{ id: string; label: string; createdAt: string; kind: string }[]>;
   upsertActivity(iri: string, name: string | null, pageUrl?: string | null): Promise<void>;
   upsertLearner(identity: string, displayName: string | null): Promise<string>;
   insertStatements(rows: StatementRow[]): Promise<string[]>;

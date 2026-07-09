@@ -26,7 +26,7 @@ describe("D1Storage", () => {
     const s = new D1Storage(env.DB);
     await s.createKey("key-1", "hash-abc", "classroom");
     const found = await s.findKey("key-1");
-    expect(found).toMatchObject({ id: "key-1", secretHash: "hash-abc", label: "classroom" });
+    expect(found).toMatchObject({ id: "key-1", secretHash: "hash-abc", label: "classroom", kind: "ingest" });
     expect(await s.findKey("nope")).toBeNull();
   });
 

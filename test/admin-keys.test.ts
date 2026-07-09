@@ -17,8 +17,9 @@ describe("POST /admin/keys", () => {
       body: JSON.stringify({ label: "my classroom" }),
     });
     expect(res.status).toBe(201);
-    const key = (await res.json()) as { id: string; secret: string; label: string };
+    const key = (await res.json()) as { id: string; secret: string; label: string; kind: string };
     expect(key.label).toBe("my classroom");
+    expect(key.kind).toBe("ingest");
     expect(key.secret).toMatch(/^[0-9a-f]{64}$/);
 
     // Stored hashed, not in plaintext
@@ -41,6 +42,23 @@ describe("POST /admin/keys", () => {
       }),
     });
     expect(ingest.status).toBe(200);
+  });
+
+  it("mints read keys and rejects unknown key kinds", async () => {
+    const read = await SELF.fetch("https://proof.test/admin/keys", {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({ label: "reader", kind: "read" }),
+    });
+    expect(read.status).toBe(201);
+    expect(await read.json()).toMatchObject({ label: "reader", kind: "read" });
+
+    const bad = await SELF.fetch("https://proof.test/admin/keys", {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({ label: "bad", kind: "banana" }),
+    });
+    expect(bad.status).toBe(400);
   });
 
   it("requires admin auth", async () => {

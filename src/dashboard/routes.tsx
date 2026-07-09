@@ -8,6 +8,7 @@ import { toCsv } from "./csv";
 import { Layout, StatCard } from "./ui";
 
 type Ctx = { Bindings: Env };
+type KeyKind = "ingest" | "read";
 
 export const dashboardRoutes = new Hono<Ctx>();
 
@@ -21,6 +22,11 @@ function formatDuration(sec: number | null): string {
   if (sec === null) return "—";
   if (sec < 30) return "<1 min";
   return `${Math.max(1, Math.round(sec / 60))} min`;
+}
+
+function parseKeyKind(raw: unknown): KeyKind | null {
+  if (raw === undefined) return "ingest";
+  return raw === "ingest" || raw === "read" ? raw : null;
 }
 
 export function humanizeStep(id: string): string {
@@ -319,8 +325,8 @@ dashboardRoutes.get("/activity", async (c) => {
 });
 
 export function KeysPage(props: {
-  keys: { id: string; label: string; createdAt: string }[];
-  minted?: { id: string; secret: string; label: string };
+  keys: { id: string; label: string; createdAt: string; kind: string }[];
+  minted?: { id: string; secret: string; label: string; kind: KeyKind };
   origin: string;
 }) {
   return (
@@ -340,14 +346,28 @@ export function KeysPage(props: {
           </p>
           <p>id: <code>{props.minted.id}</code></p>
           <p>secret: <code>{props.minted.secret}</code></p>
-          <p>Embed sample:</p>
-          <pre>
-            <code>{`<script src="${props.origin}/p.js"\n        data-activity="my-activity"\n        data-name="${props.minted.label}"\n        data-key="${props.minted.id}:${props.minted.secret}"\n        data-identity="ask"></script>`}</code>
-          </pre>
-          <p>Or paste this prompt into your AI builder (Claude, ChatGPT, Gemini):</p>
-          <pre>
-            <code>Add Proof learning tracking to my page. Fetch {props.origin}/llms.txt and follow its instructions exactly. Use data-key="{props.minted.id}:{props.minted.secret}" and pick a short kebab-case data-activity slug plus a human data-name for this activity.</code>
-          </pre>
+          {props.minted.kind === "ingest" ? (
+            <>
+              <p>Embed sample:</p>
+              <pre>
+                <code>{`<script src="${props.origin}/p.js"\n        data-activity="my-activity"\n        data-name="${props.minted.label}"\n        data-key="${props.minted.id}:${props.minted.secret}"\n        data-identity="ask"></script>`}</code>
+              </pre>
+              <p>Or paste this prompt into your AI builder (Claude, ChatGPT, Gemini):</p>
+              <pre>
+                <code>Add Proof learning tracking to my page. Fetch {props.origin}/llms.txt and follow its instructions exactly. Use data-key="{props.minted.id}:{props.minted.secret}" and pick a short kebab-case data-activity slug plus a human data-name for this activity.</code>
+              </pre>
+            </>
+          ) : (
+            <>
+              <p>Use this key to read results (it cannot write):</p>
+              <pre>
+                <code>
+                  curl -H "Authorization: Bearer {props.minted.id}:{props.minted.secret}" {props.origin}/api/activities{"\n"}
+                  curl -H "Authorization: Bearer {props.minted.id}:{props.minted.secret}" "{props.origin}/api/activity.md?slug=my-activity"
+                </code>
+              </pre>
+            </>
+          )}
         </div>
       ) : null}
       {props.keys.length === 0 ? (
@@ -356,6 +376,11 @@ export function KeysPage(props: {
       <form method="post" action="/dashboard/keys">
         <label for="label">Label for the new key</label>{" "}
         <input id="label" name="label" required maxlength={80} />{" "}
+        <label for="kind">Key type</label>{" "}
+        <select id="kind" name="kind">
+          <option value="ingest" selected>Ingest — pages send data</option>
+          <option value="read">Read — scripts and AI read results</option>
+        </select>{" "}
         <button type="submit">Create key</button>
       </form>
       {props.keys.length === 0 ? null : (
@@ -364,6 +389,7 @@ export function KeysPage(props: {
           <thead>
             <tr>
               <th scope="col">Label</th>
+              <th scope="col">Kind</th>
               <th scope="col">Key id</th>
               <th scope="col">Created</th>
             </tr>
@@ -372,6 +398,7 @@ export function KeysPage(props: {
             {props.keys.map((k) => (
               <tr>
                 <td>{k.label}</td>
+                <td>{k.kind}</td>
                 <td><code>{k.id}</code></td>
                 <td>{k.createdAt.slice(0, 10)}</td>
               </tr>
@@ -395,10 +422,12 @@ dashboardRoutes.post("/keys", async (c) => {
   const form = await c.req.parseBody();
   const label = typeof form.label === "string" ? form.label.trim() : "";
   if (!label) return c.text("A non-empty label is required", 400);
+  const kind = parseKeyKind(form.kind);
+  if (!kind) return c.text('Key kind must be "ingest" or "read"', 400);
   const s = new D1Storage(c.env.DB);
-  const { id, secret } = await mintKey(c.env.DB, label);
+  const { id, secret } = await mintKey(c.env.DB, label, kind);
   const keys = await s.listKeys();
-  return c.html(<KeysPage keys={keys} minted={{ id, secret, label }} origin={origin} />);
+  return c.html(<KeysPage keys={keys} minted={{ id, secret, label, kind }} origin={origin} />);
 });
 
 dashboardRoutes.get("/activity.csv", async (c) => {
