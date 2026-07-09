@@ -29,10 +29,20 @@ export interface StatementRow {
 export interface ActivitySummary {
   iri: string;
   name: string | null;
+  pageUrl: string | null;
   firstSeen: string;
   attempts: number;
   completions: number;
   lastActivity: string | null;
+}
+
+export interface AnswerRow {
+  learnerId: string;
+  questionId: string;
+  questionLabel: string | null;
+  response: string | null;
+  success: number | null;
+  timestamp: string;
 }
 
 export interface ActivityStats {
@@ -91,6 +101,7 @@ export interface Storage {
   stepFunnel(iri: string): Promise<FunnelStep[]>;
   stepLabels(iri: string): Promise<Record<string, string>>;
   startedLearners(iri: string): Promise<number>;
+  answers(iri: string): Promise<AnswerRow[]>;
   getLearner(learnerId: string): Promise<{ id: string; label: string; identity: string } | null>;
   learnerTimeline(iri: string, learnerId: string): Promise<TimelineRow[]>;
   rawStatements(iri: string): Promise<string[]>;

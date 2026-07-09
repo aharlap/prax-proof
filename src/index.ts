@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
 import snippetJs from "./generated/p.js.txt";
 import { cors } from "hono/cors";
-import { adminAuth, keyAuth, mintKey } from "./auth";
+import { adminAuth, keyAuth, mintKey, readAuth } from "./auth";
 import type { Env } from "./env";
 import { D1Storage } from "./storage/d1";
 import { rateLimit } from "./ratelimit";
@@ -13,6 +13,7 @@ import { aboutHandler } from "./about";
 import { landingHandler } from "./landing";
 import { DASHBOARD_CSS } from "./dashboard/styles";
 import { dashboardRoutes } from "./dashboard/routes";
+import { apiRoutes } from "./api/routes";
 
 const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
 
@@ -130,5 +131,7 @@ app.get("/dashboard.css", (c) =>
 app.use("/dashboard/*", adminAuth);
 app.use("/dashboard", adminAuth);
 app.route("/dashboard", dashboardRoutes);
+app.use("/api/*", readAuth);
+app.route("/api", apiRoutes);
 
 export default app;

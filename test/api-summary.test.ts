@@ -1,0 +1,136 @@
+// SPDX-License-Identifier: MIT
+import { env, SELF } from "cloudflare:test";
+import { beforeAll, describe, expect, it } from "vitest";
+import { mintKey } from "../src/auth";
+import { D1Storage } from "../src/storage/d1";
+import { ingestStatements } from "../src/xapi/ingest";
+import { bridgeSession } from "./fixtures/bridge-session";
+import { ADMIN } from "./helpers";
+
+const IRI = "https://proof.test/a/api-quiz";
+const V = "http://adlnet.gov/expapi/verbs/";
+
+let readAuthz = "";
+let ingestAuthz = "";
+
+const bearer = (key: { id: string; secret: string }) => `Bearer ${key.id}:${key.secret}`;
+
+const init = (iri: string, learner: string, timestamp = "2026-07-03T14:01:00Z") => ({
+  actor: { account: { homePage: "https://proof.test", name: learner } },
+  verb: { id: `${V}initialized` },
+  object: { id: iri },
+  timestamp,
+});
+
+async function apiGet(path: string, authz = readAuthz): Promise<Response> {
+  return SELF.fetch(`https://proof.test${path}`, { headers: { Authorization: authz } });
+}
+
+beforeAll(async () => {
+  const storage = new D1Storage(env.DB);
+  await ingestStatements(storage, bridgeSession(IRI, "77777777-2222-4333-8444-555555555555"));
+  await ingestStatements(storage, [init(IRI, "api-dev-2")]);
+
+  readAuthz = bearer(await mintKey(env.DB, "api summary reader", "read"));
+  ingestAuthz = bearer(await mintKey(env.DB, "api summary writer", "ingest"));
+});
+
+describe("summary JSON API", () => {
+  it("lists activities for a read key", async () => {
+    const res = await apiGet("/api/activities");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    const activities = (await res.json()) as {
+      iri: string;
+      attempts: number;
+      completions: number;
+      pageUrl: string | null;
+    }[];
+    const activity = activities.find((row) => row.iri === IRI);
+    expect(activity).toMatchObject({ attempts: 2, completions: 1, pageUrl: null });
+    expect(activity).not.toHaveProperty("firstSeen");
+  });
+
+  it("returns a compact activity summary by iri", async () => {
+    const res = await apiGet(`/api/activity?iri=${encodeURIComponent(IRI)}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      stats: {
+        started: number;
+        completions: number;
+        completionRate: number;
+        avgScoreScaled: number;
+        medianDurationSec: number;
+      };
+      funnel: { step: string; learners: number; retention: number | null }[];
+      learners: {
+        label: string;
+        anonymous: boolean;
+        completed: boolean;
+        score: { raw: number; max: number | null } | null;
+        responses: { question: string; label: string | null; response: string | null; correct: boolean | null }[];
+      }[];
+    };
+    expect(body.stats).toMatchObject({
+      started: 2,
+      completions: 1,
+      completionRate: 0.5,
+      avgScoreScaled: 0.8,
+      medianDurationSec: 312,
+    });
+    expect(body.funnel[0]).toMatchObject({ step: "__started__", learners: 2, retention: 1 });
+    expect(body.funnel.find((row) => row.step === "q:q2")).toMatchObject({ retention: 0.5 });
+    expect(body.funnel.at(-1)).toMatchObject({ step: "__finished__", learners: 1 });
+    expect(body.learners).toHaveLength(2);
+
+    const lea = body.learners.find((row) => row.label === "Lea R.")!;
+    expect(lea.anonymous).toBe(false);
+    expect(lea.completed).toBe(true);
+    expect(lea.score).toEqual({ raw: 8, max: 10 });
+    expect(lea.responses).toEqual([{ question: "q1", label: null, response: "a", correct: true }]);
+
+    const other = body.learners.find((row) => row.label === "api-dev-2")!;
+    expect(other.completed).toBe(false);
+    expect(other.responses).toEqual([]);
+  });
+
+  it("resolves activity summaries by slug", async () => {
+    const res = await apiGet("/api/activity?slug=api-quiz");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { activity: { iri: string }; stats: { started: number } };
+    expect(body.activity.iri).toBe(IRI);
+    expect(body.stats.started).toBe(2);
+  });
+
+  it("flags UUID account-name learners as anonymous", async () => {
+    const iri = "https://proof.test/a/api-anonymous";
+    const uuid = "11111111-2222-4333-8444-555555555555";
+    await ingestStatements(new D1Storage(env.DB), [
+      ...bridgeSession(iri, "88888888-2222-4333-8444-555555555555"),
+      init(iri, uuid, "2026-07-03T14:06:00Z"),
+    ]);
+
+    const res = await apiGet(`/api/activity?iri=${encodeURIComponent(iri)}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { learners: { label: string; anonymous: boolean }[] };
+    expect(body.learners.find((row) => row.label === "Lea R.")?.anonymous).toBe(false);
+    const anon = body.learners.find((row) => row.anonymous);
+    expect(anon?.label.startsWith("Anonymous ·")).toBe(true);
+  });
+
+  it("returns JSON errors for missing and unknown activities", async () => {
+    const missing = await SELF.fetch("https://proof.test/api/activity", { headers: ADMIN });
+    expect(missing.status).toBe(400);
+    expect(missing.headers.get("Cache-Control")).toBe("no-store");
+    expect(await missing.json()).toHaveProperty("docs");
+
+    const unknown = await apiGet("/api/activity?slug=missing-api-quiz");
+    expect(unknown.status).toBe(404);
+    expect(await unknown.json()).toHaveProperty("docs");
+  });
+
+  it("rejects ingest keys on summary routes", async () => {
+    const res = await apiGet(`/api/activity?iri=${encodeURIComponent(IRI)}`, ingestAuthz);
+    expect(res.status).toBe(401);
+  });
+});

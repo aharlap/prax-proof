@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import type { ActivityStats, ActivitySummary, DayCount, FunnelStep, KeyRecord, RosterRow, StatementRow, Storage, TimelineRow } from "./types";
+import type { ActivityStats, ActivitySummary, AnswerRow, DayCount, FunnelStep, KeyRecord, RosterRow, StatementRow, Storage, TimelineRow } from "./types";
 
 function childPrefix(iri: string): string {
   return `${iri}/`;
@@ -120,7 +120,7 @@ export class D1Storage implements Storage {
     const V = "http://adlnet.gov/expapi/verbs/initialized";
     const { results } = await this.db
       .prepare(
-        `SELECT a.iri, a.name, a.first_seen,
+        `SELECT a.iri, a.name, a.page_url, a.first_seen,
            (SELECT COUNT(*) FROM statements s WHERE s.activity_iri = a.iri AND s.verb = ?1) AS attempts,
            (SELECT COUNT(DISTINCT s.learner_id) FROM statements s WHERE s.activity_iri = a.iri AND s.completion = 1) AS completions,
            (SELECT MAX(s.timestamp) FROM statements s WHERE s.activity_iri = a.iri) AS last_activity
@@ -133,6 +133,7 @@ export class D1Storage implements Storage {
     return results.map((r) => ({
       iri: r.iri as string,
       name: r.name as string | null,
+      pageUrl: r.page_url as string | null,
       firstSeen: r.first_seen as string,
       attempts: r.attempts as number,
       completions: r.completions as number,
@@ -260,6 +261,44 @@ export class D1Storage implements Storage {
       .bind(iri)
       .first<{ n: number }>();
     return r?.n ?? 0;
+  }
+
+  async answers(iri: string): Promise<AnswerRow[]> {
+    const prefix = `${iri}/q/`;
+    const { results } = await this.db
+      .prepare(
+        `SELECT s.learner_id, s.activity_iri, s.response, s.success, s.timestamp, a.name AS question_label
+         FROM statements s LEFT JOIN activities a ON a.iri = s.activity_iri
+         WHERE s.verb = 'http://adlnet.gov/expapi/verbs/answered'
+           AND substr(s.activity_iri, 1, ?1) = ?2
+         ORDER BY s.timestamp ASC`,
+      )
+      .bind(prefix.length, prefix)
+      .all<{
+        learner_id: string;
+        activity_iri: string;
+        response: string | null;
+        success: number | null;
+        timestamp: string;
+        question_label: string | null;
+      }>();
+    return results.map((r) => {
+      const suffix = r.activity_iri.slice(prefix.length);
+      let questionId = suffix;
+      try {
+        questionId = decodeURIComponent(suffix);
+      } catch {
+        questionId = suffix;
+      }
+      return {
+        learnerId: r.learner_id,
+        questionId,
+        questionLabel: r.question_label,
+        response: r.response,
+        success: r.success,
+        timestamp: r.timestamp,
+      };
+    });
   }
 
   async getLearner(learnerId: string) {

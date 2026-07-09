@@ -5,46 +5,18 @@ import type { Env } from "../env";
 import { D1Storage } from "../storage/d1";
 import type { DayCount, FunnelStep, TimelineRow } from "../storage/types";
 import { toCsv } from "./csv";
+import { displayLabel, formatDuration, humanizeStep, median } from "./format";
 import { Layout, StatCard } from "./ui";
 
 type Ctx = { Bindings: Env };
 type KeyKind = "ingest" | "read";
 
 export const dashboardRoutes = new Hono<Ctx>();
-
-function median(sorted: number[]): number | null {
-  if (sorted.length === 0) return null;
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function formatDuration(sec: number | null): string {
-  if (sec === null) return "—";
-  if (sec < 30) return "<1 min";
-  return `${Math.max(1, Math.round(sec / 60))} min`;
-}
+export { displayLabel, formatDuration, humanizeStep, median } from "./format";
 
 function parseKeyKind(raw: unknown): KeyKind | null {
   if (raw === undefined) return "ingest";
   return raw === "ingest" || raw === "read" ? raw : null;
-}
-
-export function humanizeStep(id: string): string {
-  const label = id.replace(/[-_:]+/g, " ").trim();
-  return label ? label.charAt(0).toUpperCase() + label.slice(1) : id;
-}
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ACCOUNT_UUID_RE = /\|([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-
-function anonymousLabel(uuid: string): string {
-  return `Anonymous · ${uuid.slice(0, 4)}`;
-}
-
-export function displayLabel(label: string): string {
-  if (UUID_RE.test(label)) return anonymousLabel(label);
-  const match = ACCOUNT_UUID_RE.exec(label);
-  return match ? anonymousLabel(match[1]) : label;
 }
 
 function last14Days(perDay: DayCount[], now = new Date()): DayCount[] {
