@@ -131,6 +131,10 @@ app.get("/dashboard.css", (c) =>
 app.use("/dashboard/*", adminAuth);
 app.use("/dashboard", adminAuth);
 app.route("/dashboard", dashboardRoutes);
+app.use("/api/*", async (c, next) => {
+  await next();
+  c.res.headers.set("Cache-Control", "no-store");
+});
 app.use("/api/*", readAuth);
 app.route("/api", apiRoutes);
 

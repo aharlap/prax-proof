@@ -62,7 +62,7 @@ describe("summary JSON API", () => {
         avgScoreScaled: number;
         medianDurationSec: number;
       };
-      funnel: { step: string; learners: number; retention: number | null }[];
+      funnel: { step: string; learners: number; retention: number | null; dropOff: number | null }[];
       learners: {
         label: string;
         anonymous: boolean;
@@ -79,8 +79,8 @@ describe("summary JSON API", () => {
       medianDurationSec: 312,
     });
     expect(body.funnel[0]).toMatchObject({ step: "__started__", learners: 2, retention: 1 });
-    expect(body.funnel.find((row) => row.step === "q:q2")).toMatchObject({ retention: 0.5 });
-    expect(body.funnel.at(-1)).toMatchObject({ step: "__finished__", learners: 1 });
+    expect(body.funnel.find((row) => row.step === "q:q2")).toMatchObject({ retention: 0.5, dropOff: 1 });
+    expect(body.funnel.at(-1)).toMatchObject({ step: "__finished__", learners: 1, dropOff: 0 });
     expect(body.learners).toHaveLength(2);
 
     const lea = body.learners.find((row) => row.label === "Lea R.")!;
@@ -132,5 +132,11 @@ describe("summary JSON API", () => {
   it("rejects ingest keys on summary routes", async () => {
     const res = await apiGet(`/api/activity?iri=${encodeURIComponent(IRI)}`, ingestAuthz);
     expect(res.status).toBe(401);
+  });
+
+  it("sets no-store on unauthorized API responses", async () => {
+    const res = await SELF.fetch("https://proof.test/api/activity");
+    expect(res.status).toBe(401);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
   });
 });

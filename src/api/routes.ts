@@ -11,11 +11,6 @@ type ApiCtx = { Bindings: Env; Variables: { keyId: string } };
 
 export const apiRoutes = new Hono<ApiCtx>();
 
-apiRoutes.use("*", async (c, next) => {
-  c.header("Cache-Control", "no-store");
-  await next();
-});
-
 function resolveIri(c: Context<ApiCtx>): string | null {
   const iri = c.req.query("iri");
   const slug = c.req.query("slug");
@@ -52,7 +47,7 @@ function funnelRows(
       label: labels[row.step] ?? humanizeStep(row.step),
       learners: row.learners,
       retention: retention(row.learners),
-      dropOff: rows.length === 1 ? null : previous.learners - row.learners,
+      dropOff: previous.learners - row.learners,
     });
   }
 
