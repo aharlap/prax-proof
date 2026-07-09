@@ -1,7 +1,7 @@
 # Proof
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/aharlap/prax-proof)
-[![CI](https://github.com/aharlap/prax-proof/actions/workflows/ci.yml/badge.svg)](https://github.com/aharlap/prax-proof/actions/workflows/ci.yml)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Praxity/prax-proof)
+[![CI](https://github.com/Praxity/prax-proof/actions/workflows/ci.yml/badge.svg)](https://github.com/Praxity/prax-proof/actions/workflows/ci.yml)
 
 See who did your learning activity, how they scored, and where they dropped off — on your own Cloudflare account, free. Proof is an open-source (MIT) results tracker for learning activities: no LMS, no subscription, no learner data leaving infrastructure you control.
 

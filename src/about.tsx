@@ -27,7 +27,7 @@ export function About() {
             Learner data is stored in this instance's own Cloudflare D1 database, controlled by whoever operates it. The tracking snippet reports page paths only — never query strings. Identity is configured per activity: anonymous, ask-for-name, or link tokens.
           </p>
           <ul>
-            <li><a href="https://github.com/aharlap/prax-proof">Source on GitHub, MIT</a></li>
+            <li><a href="https://github.com/Praxity/prax-proof">Source on GitHub, MIT</a></li>
             <li><a href="/llms.txt">Instructions for AI builders</a></li>
             <li><a href="/">Home</a></li>
           </ul>

@@ -174,7 +174,7 @@ dashboardRoutes.get("/", async (c) => {
 export function ActivitiesEmptyState(props: { hasKeys: boolean }) {
   return props.hasKeys ? (
     <p class="prax-empty">
-      Waiting for your first statement. Embed the snippet on a page (see the <a href="https://github.com/aharlap/prax-proof/blob/main/docs/embed.md">embed guide</a>) or use the AI prompt from your <a href="/dashboard/keys">key page</a>.
+      Waiting for your first statement. Embed the snippet on a page (see the <a href="https://github.com/Praxity/prax-proof/blob/main/docs/embed.md">embed guide</a>) or use the AI prompt from your <a href="/dashboard/keys">key page</a>.
     </p>
   ) : (
     <p class="prax-empty">

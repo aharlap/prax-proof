@@ -15,7 +15,7 @@ import { DASHBOARD_CSS } from "./dashboard/styles";
 import { dashboardRoutes } from "./dashboard/routes";
 import { apiRoutes } from "./api/routes";
 
-const ERROR_DOCS = "https://github.com/aharlap/prax-proof#errors";
+const ERROR_DOCS = "https://github.com/Praxity/prax-proof#errors";
 
 type Ctx = { Bindings: Env; Variables: { keyId: string } };
 type KeyKind = "ingest" | "read";

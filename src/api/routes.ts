@@ -5,7 +5,7 @@ import { D1Storage } from "../storage/d1";
 import type { AnswerRow, FunnelStep, RosterRow } from "../storage/types";
 import { displayLabel, formatDuration, humanizeStep, median } from "../dashboard/format";
 
-const DOCS = "https://github.com/aharlap/prax-proof#api";
+const DOCS = "https://github.com/Praxity/prax-proof#api";
 
 type ApiCtx = { Bindings: Env; Variables: { keyId: string } };
 

@@ -67,7 +67,7 @@ describe("activity list", () => {
   it("renders the waiting-for-statements onboarding empty state when keys exist", () => {
     const html = ActivitiesEmptyState({ hasKeys: true }).toString();
     expect(html).toContain("Waiting for your first statement");
-    expect(html).toContain('href="https://github.com/aharlap/prax-proof/blob/main/docs/embed.md"');
+    expect(html).toContain('href="https://github.com/Praxity/prax-proof/blob/main/docs/embed.md"');
     expect(html).toContain('href="/dashboard/keys"');
   });
 

@@ -50,7 +50,7 @@ describe("POST /xapi/statements", () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string; docs: string };
     expect(body.error).toMatch(/statement/i);
-    expect(body.docs).toContain("github.com/aharlap/prax-proof");
+    expect(body.docs).toContain("github.com/Praxity/prax-proof");
   });
 
   it("rejects malformed JSON with 400", async () => {
