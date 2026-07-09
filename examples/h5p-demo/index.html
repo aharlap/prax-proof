@@ -38,6 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/h5p-standalone@3.7.0/dist/main.bundle.js"></script>
   <style>
     body { font: 16px/1.5 system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
+    :focus-visible { outline: 3px solid #1D4ED8; outline-offset: 2px; }
     button { font-size: 1rem; padding: 0.6rem 1.1rem; cursor: pointer; }
     #status { margin-top: 1rem; color: #444; }
     .ok { color: #0b6e4f; font-weight: 600; }
@@ -50,7 +51,7 @@
   <button id="start">Start the H5P activity</button>
   <button id="answer">Answer question 1 (correct)</button>
   <button id="complete">Complete the H5P activity (score 8/10)</button>
-  <p id="status">Waiting for H5P runtime…</p>
+  <p id="status" role="status">Waiting for H5P runtime…</p>
 
   <script>
     // Wait for the real H5P runtime, then wire two buttons that emit genuine

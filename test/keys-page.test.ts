@@ -33,6 +33,9 @@ describe("keys page", () => {
     const html = await res.text();
     expect(html).toMatch(/[0-9a-f]{64}/);          // one-time secret shown
     expect(html).toContain("Form minted");
+    expect(html).toContain('id="minted-key"');
+    expect(html).toContain("<h2>Key created</h2>");
+    expect(html.indexOf('id="minted-key"')).toBeLessThan(html.indexOf("Label for the new key"));
     expect(html).toContain("data-key=");            // embed sample
     expect(html).toContain("data-name=");
     expect(html).toContain("Or paste this prompt into your AI builder (Claude, ChatGPT, Gemini):");

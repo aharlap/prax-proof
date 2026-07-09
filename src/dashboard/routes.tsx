@@ -86,43 +86,45 @@ function FunnelSection(props: {
   return (
     <>
       <h2>Drop-off funnel</h2>
-      <table>
-        <caption>Learner progress through the activity, step by step</caption>
-        <thead>
-          <tr>
-            <th scope="col">Step</th>
-            <th scope="col">Learners</th>
-            <th scope="col">Retention</th>
-            <th scope="col">Drop-off</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => {
-            const width = startedRow > 0 ? Math.round((r.learners / startedRow) * 100) : 0;
-            const retention = startedRow > 0 ? `${width}%` : "—";
-            const lost = i === 0 ? 0 : rows[i - 1].learners - r.learners;
-            const drop = i > 0 && lost > 0 && rows[i - 1].learners > 0
-              ? `−${lost} (${Math.round((lost / rows[i - 1].learners) * 100)}%)`
-              : "—";
-            return (
-              <tr class={i === biggestIdx ? "prax-drop-row" : ""}>
-                <td title={r.raw ?? undefined}>{r.label}</td>
-                <td>
-                  <div class="prax-track" aria-hidden="true">
-                    <div class="prax-track-fill" style={`width:${width}%`}></div>
-                  </div>
-                  <span>{String(r.learners)}</span>
-                </td>
-                <td>{retention}</td>
-                <td>
-                  {drop}
-                  {i === biggestIdx ? <strong> ▼ biggest drop-off</strong> : null}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div class="prax-table-wrap">
+        <table>
+          <caption>Learner progress through the activity, step by step</caption>
+          <thead>
+            <tr>
+              <th scope="col">Step</th>
+              <th scope="col">Learners</th>
+              <th scope="col">Retention</th>
+              <th scope="col">Drop-off</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const width = startedRow > 0 ? Math.round((r.learners / startedRow) * 100) : 0;
+              const retention = startedRow > 0 ? `${width}%` : "—";
+              const lost = i === 0 ? 0 : rows[i - 1].learners - r.learners;
+              const drop = i > 0 && lost > 0 && rows[i - 1].learners > 0
+                ? `−${lost} (${Math.round((lost / rows[i - 1].learners) * 100)}%)`
+                : "—";
+              return (
+                <tr class={i === biggestIdx ? "prax-drop-row" : ""}>
+                  <td title={r.raw ?? undefined}>{r.label}</td>
+                  <td>
+                    <div class="prax-track" aria-hidden="true">
+                      <div class="prax-track-fill" style={`width:${width}%`}></div>
+                    </div>
+                    <span>{String(r.learners)}</span>
+                  </td>
+                  <td>{retention}</td>
+                  <td>
+                    {drop}
+                    {i === biggestIdx ? <strong> ▼ biggest drop-off</strong> : null}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       <p class="prax-soft">Started = learners who began the activity. A drop-off counts learners who reached a step but none after it. Learners can skip steps, so a later row can exceed an earlier one.</p>
     </>
   );
@@ -137,31 +139,33 @@ dashboardRoutes.get("/", async (c) => {
       {activities.length === 0 ? (
         <ActivitiesEmptyState hasKeys={keys.length > 0} />
       ) : (
-        <table>
-          <caption>All tracked activities, most recent first</caption>
-          <thead>
-            <tr>
-              <th scope="col">Activity</th>
-              <th scope="col">Attempts</th>
-              <th scope="col">Completions</th>
-              <th scope="col">Last activity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {activities.map((a) => (
+        <div class="prax-table-wrap">
+          <table>
+            <caption>All tracked activities, most recent first</caption>
+            <thead>
               <tr>
-                <td>
-                  <a href={`/dashboard/activity?iri=${encodeURIComponent(a.iri)}`}>
-                    {a.name ?? a.iri}
-                  </a>
-                </td>
-                <td>{String(a.attempts)}</td>
-                <td>{String(a.completions)}</td>
-                <td>{a.lastActivity ? a.lastActivity.slice(0, 10) : "—"}</td>
+                <th scope="col">Activity</th>
+                <th scope="col">Attempts</th>
+                <th scope="col">Completions</th>
+                <th scope="col">Last activity</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {activities.map((a) => (
+                <tr>
+                  <td>
+                    <a href={`/dashboard/activity?iri=${encodeURIComponent(a.iri)}`}>
+                      {a.name ?? a.iri}
+                    </a>
+                  </td>
+                  <td>{String(a.attempts)}</td>
+                  <td>{String(a.completions)}</td>
+                  <td>{a.lastActivity ? a.lastActivity.slice(0, 10) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Layout>,
   );
@@ -260,37 +264,39 @@ dashboardRoutes.get("/activity", async (c) => {
       {roster.length === 0 ? (
         <p class="prax-empty">No learners yet.</p>
       ) : (
-        <table>
-          <caption>One row per learner, most recently active first</caption>
-          <thead>
-            <tr>
-              <th scope="col">Learner</th>
-              <th scope="col">Status</th>
-              <th scope="col">Score</th>
-              <th scope="col">Last seen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roster.map((r) => (
+        <div class="prax-table-wrap">
+          <table>
+            <caption>One row per learner, most recently active first</caption>
+            <thead>
               <tr>
-                <td>
-                  <a href={`/dashboard/learner?id=${encodeURIComponent(r.learnerId)}&iri=${encodeURIComponent(iri)}`}>
-                    {displayLabel(r.label)}
-                  </a>
-                </td>
-                <td>
-                  {r.completed ? (
-                    <span class="prax-badge done">Completed</span>
-                  ) : (
-                    <span class="prax-badge open">In progress</span>
-                  )}
-                </td>
-                <td>{r.scoreRaw !== null ? `${r.scoreRaw} / ${r.scoreMax ?? "?"}` : "—"}</td>
-                <td>{r.lastSeen.slice(0, 10)}</td>
+                <th scope="col">Learner</th>
+                <th scope="col">Status</th>
+                <th scope="col">Score</th>
+                <th scope="col">Last seen</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {roster.map((r) => (
+                <tr>
+                  <td>
+                    <a href={`/dashboard/learner?id=${encodeURIComponent(r.learnerId)}&iri=${encodeURIComponent(iri)}`}>
+                      {displayLabel(r.label)}
+                    </a>
+                  </td>
+                  <td>
+                    {r.completed ? (
+                      <span class="prax-badge done">Completed</span>
+                    ) : (
+                      <span class="prax-badge open">In progress</span>
+                    )}
+                  </td>
+                  <td>{r.scoreRaw !== null ? `${r.scoreRaw} / ${r.scoreMax ?? "?"}` : "—"}</td>
+                  <td>{r.lastSeen.slice(0, 10)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Layout>,
   );
@@ -303,17 +309,10 @@ export function KeysPage(props: {
 }) {
   return (
     <Layout title="Keys">
-      <h1>Keys</h1>
-      <p>
-        Ingest keys let a page or app send learning events into Proof; they cannot read anything back.
-        Read keys let scripts and AI tools read results; they cannot write.
-      </p>
-      <p>Use one key per site, course, or tool so results can be traced and rotated later.</p>
       {props.minted ? (
-        <div class="prax-stat">
-          <p>
-            <strong>Key created.</strong> Copy the secret now — it is shown only once.
-          </p>
+        <div id="minted-key" class="prax-stat">
+          <h2>Key created</h2>
+          <p>Copy the secret now — it is shown only once.</p>
           <p>id: <code>{props.minted.id}</code></p>
           <p>secret: <code>{props.minted.secret}</code></p>
           {props.minted.kind === "ingest" ? (
@@ -340,6 +339,12 @@ export function KeysPage(props: {
           )}
         </div>
       ) : null}
+      <h1>Keys</h1>
+      <p>
+        Ingest keys let a page or app send learning events into Proof; they cannot read anything back.
+        Read keys let scripts and AI tools read results; they cannot write.
+      </p>
+      <p>Use one key per site, course, or tool so results can be traced and rotated later.</p>
       {props.keys.length === 0 ? (
         <p class="prax-empty">No keys yet — create your first key below, then Proof hands you everything to paste into your page or AI builder.</p>
       ) : null}
@@ -354,27 +359,29 @@ export function KeysPage(props: {
         <button type="submit">Create key</button>
       </form>
       {props.keys.length === 0 ? null : (
-        <table>
-          <caption>Existing keys (secrets are never shown again)</caption>
-          <thead>
-            <tr>
-              <th scope="col">Label</th>
-              <th scope="col">Kind</th>
-              <th scope="col">Key id</th>
-              <th scope="col">Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {props.keys.map((k) => (
+        <div class="prax-table-wrap">
+          <table>
+            <caption>Existing keys (secrets are never shown again)</caption>
+            <thead>
               <tr>
-                <td>{k.label}</td>
-                <td>{k.kind}</td>
-                <td><code>{k.id}</code></td>
-                <td>{k.createdAt.slice(0, 10)}</td>
+                <th scope="col">Label</th>
+                <th scope="col">Kind</th>
+                <th scope="col">Key id</th>
+                <th scope="col">Created</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {props.keys.map((k) => (
+                <tr>
+                  <td>{k.label}</td>
+                  <td>{k.kind}</td>
+                  <td><code>{k.id}</code></td>
+                  <td>{k.createdAt.slice(0, 10)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Layout>
   );
@@ -453,27 +460,29 @@ dashboardRoutes.get("/learner", async (c) => {
       {timeline.length === 0 ? (
         <p class="prax-empty">No statements for this learner on this activity.</p>
       ) : (
-        <table>
-          <caption>Attempt timeline, oldest first</caption>
-          <thead>
-            <tr>
-              <th scope="col">When</th>
-              <th scope="col">What</th>
-              <th scope="col">Detail</th>
-              <th scope="col">Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {timeline.map((row) => (
+        <div class="prax-table-wrap">
+          <table>
+            <caption>Attempt timeline, oldest first</caption>
+            <thead>
               <tr>
-                <td>{row.timestamp.slice(0, 16).replace("T", " ")}</td>
-                <td>{verbLabel(row.verb)}</td>
-                <td>{timelineDetail(row)}</td>
-                <td>{timelineResult(row)}</td>
+                <th scope="col">When</th>
+                <th scope="col">What</th>
+                <th scope="col">Detail</th>
+                <th scope="col">Result</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {timeline.map((row) => (
+                <tr>
+                  <td>{row.timestamp.slice(0, 16).replace("T", " ")}</td>
+                  <td>{verbLabel(row.verb)}</td>
+                  <td>{timelineDetail(row)}</td>
+                  <td>{timelineResult(row)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Layout>,
   );

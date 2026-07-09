@@ -28,6 +28,7 @@ body {
 }
 a { color: var(--prax-color-accent); }
 :focus-visible { outline: 3px solid var(--prax-color-focus); outline-offset: 2px; }
+input, select, button { border: 1px solid var(--prax-color-ink-soft); border-radius: 4px; padding: 0.35rem 0.6rem; background: var(--prax-color-surface); font: inherit; }
 .prax-skip {
   position: absolute; left: -999px; top: 0; background: var(--prax-color-surface);
   padding: 0.5rem 1rem; z-index: 10;
@@ -46,6 +47,7 @@ h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; }
 table { width: 100%; border-collapse: collapse; background: var(--prax-color-surface);
   border: 1px solid var(--prax-color-line); border-radius: var(--prax-radius);
   box-shadow: var(--prax-offset-shadow); }
+.prax-table-wrap { overflow-x: auto; }
 caption { text-align: left; font-size: 0.85rem; color: var(--prax-color-ink-soft); margin-bottom: 0.5rem; }
 th { text-align: left; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--prax-color-ink-soft); font-weight: 500; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--prax-color-line); }
