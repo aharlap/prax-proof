@@ -27,6 +27,8 @@ function funnelRows(
   steps: FunnelStep[],
   labels: Record<string, string>,
 ) {
+  if (steps.length === 0) return [];
+
   const retention = (learners: number) => (started > 0 ? learners / started : null);
   const rows: {
     step: string;
@@ -207,20 +209,24 @@ function renderActivityMarkdown(summary: ActivitySummaryResponse, origin: string
     "",
     statsParagraph(summary),
     "",
-    "## Funnel",
-    "| Step | Learners | Retention | Drop-off |",
-    "|------|----------|-----------|----------|",
   ];
-  const biggestIdx = biggestDropIndex(summary.funnel);
-  summary.funnel.forEach((row, i) => {
-    const retention = row.retention === null ? "—" : pct(row.retention);
-    let dropOff = row.dropOff === null || row.dropOff <= 0 ? "—" : `−${row.dropOff}`;
-    if (i === biggestIdx) dropOff += " ← biggest drop-off";
-    lines.push(`| ${mdCell(row.label)} | ${row.learners} | ${retention} | ${dropOff} |`);
-  });
+  if (summary.funnel.length > 0) {
+    lines.push(
+      "## Funnel",
+      "| Step | Learners | Retention | Drop-off |",
+      "|------|----------|-----------|----------|",
+    );
+    const biggestIdx = biggestDropIndex(summary.funnel);
+    summary.funnel.forEach((row, i) => {
+      const retention = row.retention === null ? "—" : pct(row.retention);
+      let dropOff = row.dropOff === null || row.dropOff <= 0 ? "—" : `−${row.dropOff}`;
+      if (i === biggestIdx) dropOff += " ← biggest drop-off";
+      lines.push(`| ${mdCell(row.label)} | ${row.learners} | ${retention} | ${dropOff} |`);
+    });
+    lines.push("");
+  }
 
   lines.push(
-    "",
     "## Learners",
     "| Learner | Status | Score | Last seen |",
     "|---------|--------|-------|-----------|",

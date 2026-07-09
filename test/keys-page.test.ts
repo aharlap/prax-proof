@@ -9,8 +9,11 @@ describe("keys page", () => {
     const res = await SELF.fetch("https://proof.test/dashboard/keys", { headers: ADMIN });
     expect(res.status).toBe(200);
     const html = await res.text();
+    expect(html).toContain("<h1>Keys</h1>");
     expect(html).toContain("Ingest keys let a page or app send learning events into Proof");
-    expect(html).toContain("Keys can write activity data only");
+    expect(html).toContain("they cannot read anything back");
+    expect(html).toContain("Read keys let scripts and AI tools read results; they cannot write");
+    expect(html).toContain("Use one key per site, course, or tool so results can be traced and rotated later");
   });
 
   it("shows the first-key hint when no keys are present", () => {

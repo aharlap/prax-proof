@@ -68,7 +68,7 @@ See [docs/deploy.md](docs/deploy.md). Production instances must set the `ADMIN_P
 
 ## Errors
 
-All 4xx responses return `{ "error": "<plain-language reason>", "docs": "..." }`.
+Auth 401 responses return `{ "error": "Unauthorized" }`; other 4xx responses return `{ "error": "<plain-language reason>", "docs": "..." }`.
 The version header `X-Experience-API-Version: 1.0.x` is required on
 `/xapi/statements`.
 

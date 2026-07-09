@@ -154,7 +154,7 @@ Returns a paste-ready markdown report for humans and LLMs.
 
 ## Errors
 
-All 4xx responses use:
+Auth failures return a bare `401` body: `{ "error": "Unauthorized" }`. Other 4xx responses use:
 
 ```json
 {
@@ -164,7 +164,6 @@ All 4xx responses use:
 ```
 
 Missing `iri`/`slug` returns `400`. Unknown activities return `404`.
-Unauthorized requests return `401`.
 
 ## Caching
 

@@ -303,14 +303,12 @@ export function KeysPage(props: {
 }) {
   return (
     <Layout title="Keys">
-      <h1>Ingest keys</h1>
+      <h1>Keys</h1>
       <p>
-        Ingest keys let a page or app send learning events into Proof. Use one key per
-        site, course, or tool so results can be traced and rotated later.
+        Ingest keys let a page or app send learning events into Proof; they cannot read anything back.
+        Read keys let scripts and AI tools read results; they cannot write.
       </p>
-      <p>
-        Keys can write activity data only; they cannot read dashboard data.
-      </p>
+      <p>Use one key per site, course, or tool so results can be traced and rotated later.</p>
       {props.minted ? (
         <div class="prax-stat">
           <p>
