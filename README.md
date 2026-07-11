@@ -3,7 +3,7 @@
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Praxity/prax-proof)
 [![CI](https://github.com/Praxity/prax-proof/actions/workflows/ci.yml/badge.svg)](https://github.com/Praxity/prax-proof/actions/workflows/ci.yml)
 
-See who did your learning activity, how they scored, and where they dropped off — on your own Cloudflare account, free. Proof is an open-source (MIT) results tracker for learning activities: no LMS, no subscription, no learner data leaving infrastructure you control.
+See participation, completion, scores, and where learners stopped, on your own Cloudflare account. Proof is an open-source (MIT), privacy-aware results tracker for learning activities: no LMS and no subscription.
 
 ![Proof dashboard — activity detail with completion rate, drop-off funnel, and learner roster](docs/assets/dashboard.png)
 
@@ -11,7 +11,11 @@ See who did your learning activity, how they scored, and where they dropped off 
 
 1. Deploy your instance (one click below, or CLI).
 2. Add one script tag to any page — or paste one prompt into your AI builder, or add data-h5p to a page that already hosts H5P content.
-3. Watch results land: completion rate, drop-off funnel, per-learner timelines, CSV export.
+3. Watch results land: participant-based completion, learner-set drop-off, per-learner timelines, and paged exports.
+
+In Proof, a participant is a distinct learner record, usually a pseudonymous
+browser identity. It is not a verified unique person or an IP/fingerprint-based
+visitor metric; shared devices, resets, and multiple browsers affect the count.
 
 ## Compared honestly
 
@@ -26,13 +30,19 @@ Need a full conformant LRS? Use [lrsql](https://github.com/yetanalytics/lrsql) �
 
 ## Status
 
-v1 + insight/identity milestones shipped; tests + typecheck + axe gate are in place.
+Pre-release. Ingest, privacy controls, reporting, retention, and Cloudflare
+deployment are functional and hardened. Local Worker/D1 tests, migration
+upgrade rehearsal, real-browser field tests, typecheck, and desktop/mobile axe
+gates are in place. Remote-D1 and first-time deploy canaries remain release
+validation items.
 
 ## Quickstart (local)
 
     pnpm install
+    cp .dev.vars.example .dev.vars
+    # Set a strong ADMIN_PASSWORD in .dev.vars
     wrangler d1 migrations apply proof --local
-    pnpm dev                # wrangler dev with a local D1
+    pnpm dev
 
 Mint an ingest key (admin password is the ADMIN_PASSWORD secret; use any
 value with `wrangler dev --var ADMIN_PASSWORD:dev-password`):
@@ -40,7 +50,7 @@ value with `wrangler dev --var ADMIN_PASSWORD:dev-password`):
     curl -X POST http://localhost:8787/admin/keys \
       -u admin:dev-password \
       -H "Content-Type: application/json" \
-      -d '{"label":"my classroom"}'
+      -d '{"label":"Fractions quiz","activityScope":"http://localhost:8787/a/fractions-quiz","identityMode":"anonymous"}'
 
 Send a statement with the returned id/secret:
 
@@ -48,13 +58,15 @@ Send a statement with the returned id/secret:
       -u <key-id>:<key-secret> \
       -H "X-Experience-API-Version: 1.0.3" \
       -H "Content-Type: application/json" \
-      -d '{"actor":{"mbox":"mailto:me@example.org"},"verb":{"id":"http://adlnet.gov/expapi/verbs/completed"},"object":{"id":"https://example.org/my-activity"}}'
+      -d '{"actor":{"account":{"homePage":"https://example.org","name":"browser-id"}},"verb":{"id":"http://adlnet.gov/expapi/verbs/completed"},"object":{"id":"http://localhost:8787/a/fractions-quiz"},"result":{"completion":true}}'
 
 ## Embed in any page
 
 One script tag + four calls (`proof.start/step/answer/finish`) — see
 [docs/embed.md](docs/embed.md). AI builders: point them at your instance's
-`/llms.txt`, which contains paste-ready instructions.
+`/llms.txt`, which contains paste-ready instructions including a learner notice.
+
+Anonymous pseudonymous identity is the default. Operators can configure notice or opt-in tracking, retention, hosting-region copy, and a privacy contact. Proof can export or delete a learner record, but the operator remains responsible for legal basis, notice/consent, data minimization, safeguards, and rights requests under applicable law. See [Privacy and operator responsibilities](docs/embed.md#privacy-and-operator-responsibilities).
 
 ## Read your results (humans, scripts, AIs)
 
@@ -62,7 +74,7 @@ Read keys are separate from ingest keys, so pages can write results without bein
 
 ## Deploy
 
-See [docs/deploy.md](docs/deploy.md). Production instances must set the `ADMIN_PASSWORD` secret:
+**Recommended:** use the Deploy to Cloudflare button. See [docs/deploy.md](docs/deploy.md) for one-click, CLI, EU jurisdiction, and the current limits of regional placement. Production instances must set the `ADMIN_PASSWORD` secret:
 
     wrangler secret put ADMIN_PASSWORD
 
@@ -74,10 +86,12 @@ The version header `X-Experience-API-Version: 1.0.x` is required on
 
 ## Development
 
-    pnpm test        # vitest via @cloudflare/vitest-pool-workers (local D1)
+    pnpm test        # Vitest via @cloudflare/vitest-pool-workers (local D1)
     pnpm typecheck
-    pnpm test:a11y   # Playwright + axe against wrangler dev (zero-violation gate)
-    pnpm screenshot   # refresh docs/assets/dashboard.png
+    pnpm test:a11y   # Playwright + axe, desktop and mobile
+    pnpm verify      # all of the above
+    pnpm field       # real Wrangler H5P + consent flows
+    pnpm screenshot  # refresh docs/assets/dashboard.png
 
 ## License
 

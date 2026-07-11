@@ -6,8 +6,6 @@ export function About() {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preconnect" href="https://fonts.bunny.net" />
-        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=nunito:800|poppins:400,500" />
         <link rel="stylesheet" href="/dashboard.css" />
         <title>About Proof</title>
       </head>
@@ -24,11 +22,12 @@ export function About() {
           </p>
           <h2>Privacy</h2>
           <p>
-            Learner data is stored in this instance's own Cloudflare D1 database, controlled by whoever operates it. The tracking snippet reports page paths only — never query strings. Identity is configured per activity: anonymous, ask-for-name, or link tokens.
+            Learner data is stored in this instance's own Cloudflare D1 database, controlled by whoever operates it. Anonymous and token modes omit page location and identity-bearing metadata; named mode can store a page path but never its query string. Identity is pseudonymous by default, and an operator can explicitly choose names or opaque link tokens.
           </p>
           <ul>
             <li><a href="https://github.com/Praxity/prax-proof">Source on GitHub, MIT</a></li>
             <li><a href="/llms.txt">Instructions for AI builders</a></li>
+            <li><a href="/privacy">This instance's privacy notice</a></li>
             <li><a href="/">Home</a></li>
           </ul>
         </main>

@@ -7,12 +7,14 @@
   "type": "module",
   "scripts": {
     "build:snippet": "esbuild src/snippet/main.ts --bundle --minify --format=iife --target=es2020 --outfile=src/generated/p.js.txt --log-level=warning",
+    "db:migrate": "wrangler d1 migrations apply DB --remote",
     "dev": "pnpm build:snippet && wrangler dev",
-    "deploy": "pnpm build:snippet && wrangler deploy && wrangler d1 migrations apply DB --remote",
+    "deploy": "pnpm build:snippet && pnpm db:migrate && wrangler deploy",
     "test": "pnpm build:snippet && vitest run",
     "test:watch": "vitest",
     "field": "pnpm build:snippet && rm -rf .wrangler/state && wrangler d1 migrations apply proof --local && playwright test -c playwright.field.config.ts",
     "test:a11y": "pnpm build:snippet && wrangler d1 migrations apply proof --local && playwright test -c playwright.config.ts",
+    "verify": "pnpm typecheck && pnpm test && pnpm test:a11y",
     "screenshot": "pnpm build:snippet && rm -rf .wrangler/state && wrangler d1 migrations apply proof --local && playwright test -c playwright.screenshot.config.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.browser.json"
   },

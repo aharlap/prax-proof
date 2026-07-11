@@ -100,7 +100,7 @@ export function extractColumns(
     success: bool(stmt.result?.success),
     completion: bool(stmt.result?.completion),
     durationSec: stmt.result?.duration ? parseDuration(stmt.result.duration) : null,
-    timestamp: stmt.timestamp ?? stored,
+    timestamp: stmt.timestamp ? new Date(stmt.timestamp).toISOString() : stored,
     stored,
     registration: stmt.context?.registration ?? null,
     step: extractStep(stmt),

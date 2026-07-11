@@ -18,7 +18,13 @@ const ctx: SnippetContext = {
 };
 
 beforeAll(async () => {
-  await new D1Storage(env.DB).createKey("snippet-key", await sha256Hex("snippet-secret"), "snippet");
+  await new D1Storage(env.DB).createKey(
+    "snippet-key",
+    await sha256Hex("snippet-secret"),
+    "snippet",
+    "ingest",
+    { identityMode: "named" },
+  );
 });
 
 describe("snippet → server roundtrip", () => {

@@ -10,7 +10,9 @@ import { h5pAnswered, h5pAttemptedMain, h5pCompletedMain } from "./fixtures/real
 const AUTH = "Basic " + btoa("h5p-key:snippet-secret");
 
 beforeAll(async () => {
-  await new D1Storage(env.DB).createKey("h5p-key", await sha256Hex("snippet-secret"), "h5p");
+  await new D1Storage(env.DB).createKey("h5p-key", await sha256Hex("snippet-secret"), "h5p", "ingest", {
+    identityMode: "named",
+  });
 });
 
 describe("H5P snippet bridge roundtrip", () => {

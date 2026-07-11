@@ -49,7 +49,7 @@ describe("extractColumns", () => {
       activityIri: "https://example.org/act/fractions-quiz",
       scoreRaw: 8, scoreMin: 0, scoreMax: 10, scoreScaled: 0.8,
       success: 1, completion: 1, durationSec: 272,
-      timestamp: "2026-07-02T10:00:00Z",
+      timestamp: "2026-07-02T10:00:00.000Z",
       stored: "2026-07-02T10:00:01.000Z",
       registration: null,
       step: null,

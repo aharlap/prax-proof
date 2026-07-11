@@ -122,7 +122,7 @@ function completed(
 test("captures the dashboard activity detail screenshot", async ({ page, request }) => {
   const mint = await request.post("/admin/keys", {
     headers: { Authorization: "Basic " + btoa("admin:a11y-test-pw") },
-    data: { label: "screenshot seed" },
+    data: { label: "screenshot seed", identityMode: "named" },
   });
   expect(mint.status()).toBe(201);
   const key = (await mint.json()) as { id: string; secret: string };
@@ -153,17 +153,22 @@ test("captures the dashboard activity detail screenshot", async ({ page, request
     completed("aaaaaaaa-0052-4000-8000-000000000052", actors.ben, regs.ben, 8, { raw: 7, max: 10, scaled: 0.7 }, "PT6M"),
     completed("aaaaaaaa-0053-4000-8000-000000000053", actors.chloe, regs.chloe, 7),
   ];
-  const post = await request.post("/xapi/statements", {
-    headers: {
-      Authorization: "Basic " + btoa(`${key.id}:${key.secret}`),
-      "X-Experience-API-Version": "1.0.3",
-    },
-    data: session,
-  });
-  expect(post.status()).toBe(200);
+  for (let offset = 0; offset < session.length; offset += 10) {
+    const post = await request.post("/xapi/statements", {
+      headers: {
+        Authorization: "Basic " + btoa(`${key.id}:${key.secret}`),
+        "X-Experience-API-Version": "1.0.3",
+      },
+      data: session.slice(offset, offset + 10),
+    });
+    expect(post.status()).toBe(200);
+  }
 
   await page.goto(`/dashboard/activity?iri=${encodeURIComponent(IRI)}`);
   await expect(page.getByRole("heading", { name: "Fractions quiz" })).toBeVisible();
   mkdirSync("docs/assets", { recursive: true });
   await page.screenshot({ path: "docs/assets/dashboard.png", fullPage: false });
+  mkdirSync("test-results", { recursive: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "test-results/mobile-dashboard.png", fullPage: false });
 });

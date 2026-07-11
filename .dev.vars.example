@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: MIT
+# Cloudflare's deploy flow uses this file to prompt for the required secret.
+ADMIN_PASSWORD=""

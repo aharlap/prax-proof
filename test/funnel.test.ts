@@ -53,6 +53,25 @@ describe("stepFunnel", () => {
     expect(byStep["wrap-up"]).toBe(1);
     expect(byStep["q:q2"]).toBe(1);
   });
+
+  it("does not count an earlier out-of-order visit as forward progress", async () => {
+    const iri = `https://example.org/x/chronology-${crypto.randomUUID()}`;
+    const s = new D1Storage(env.DB);
+    await ingestStatements(s, [
+      init("ordered", iri),
+      step("ordered", "first", "2026-07-03T10:01:00Z", iri),
+      step("ordered", "second", "2026-07-03T10:02:00Z", iri),
+      complete("ordered", "2026-07-03T10:03:00Z", iri),
+      init("out-of-order", iri),
+      step("out-of-order", "second", "2026-07-03T10:04:00Z", iri),
+      step("out-of-order", "first", "2026-07-03T10:05:00Z", iri),
+    ]);
+
+    const funnel = await s.stepFunnel(iri);
+    expect(funnel.map((row) => row.step)).toEqual(["first", "second"]);
+    expect(funnel.find((row) => row.step === "first")).toMatchObject({ learners: 2, dropOff: 1 });
+    expect(funnel.find((row) => row.step === "second")).toMatchObject({ learners: 2, dropOff: 1 });
+  });
 });
 
 describe("humanizeStep", () => {
@@ -71,12 +90,12 @@ describe("funnel section on activity detail", () => {
     const html = await res.text();
     expect(html).toContain("Drop-off funnel");
     expect(html).toContain("Retention");
-    expect(html).toContain("Started = learners who began the activity. A drop-off counts learners who reached a step but none after it. Learners can skip steps, so a later row can exceed an earlier one.");
-    expect(html).toContain("Started");
+    expect(html).toContain("Participants are distinct learner records with any event for this activity. Drop-off counts participants who reached a row but no later row.");
+    expect(html).toContain("Participants");
     expect(html).toContain("Finished");
     expect(html).toContain("Intro");
     expect(html).toContain("▼ biggest drop-off");
-    expect(html).toMatch(/<tr class="prax-drop-row">\s*<td title="intro">Intro<\/td>[\s\S]*?▼ biggest drop-off/);
+    expect(html).toMatch(/<tr class="prax-drop-row">\s*<td title="wrap-up">Wrap up<\/td>[\s\S]*?▼ biggest drop-off/);
   });
 
   it("marks the largest percentage drop, even when a larger absolute loss appears earlier", async () => {
@@ -89,7 +108,7 @@ describe("funnel section on activity detail", () => {
     expect(html).toContain("−5 (50%)");
     expect(html).toContain("Filter review");
     expect(html).toContain("−4 (80%)");
-    expect(html).toMatch(/<tr class="prax-drop-row">\s*<td title="filter-review">Filter review<\/td>[\s\S]*?−4 \(80%\)[\s\S]*?▼ biggest drop-off/);
+    expect(html).toMatch(/<tr class="prax-drop-row">\s*<td title="broad-start">Broad start<\/td>[\s\S]*?−4 \(80%\)[\s\S]*?▼ biggest drop-off/);
   });
 
   it("uses identical fixed-track percentages for equal-count steps", async () => {

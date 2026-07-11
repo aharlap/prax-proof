@@ -8,7 +8,9 @@ import { allFixtures, h5pAnswered, praxCompleted } from "./fixtures/real-stateme
 const AUTH = "Basic " + btoa("fixture-key:fixture-secret");
 
 beforeAll(async () => {
-  await new D1Storage(env.DB).createKey("fixture-key", await sha256Hex("fixture-secret"), "fixtures");
+  await new D1Storage(env.DB).createKey("fixture-key", await sha256Hex("fixture-secret"), "fixtures", "ingest", {
+    identityMode: "named",
+  });
 });
 
 describe("real-world fixture replay", () => {

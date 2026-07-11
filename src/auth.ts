@@ -21,18 +21,32 @@ export async function sha256Hex(input: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-type AuthCtx = { Bindings: Env; Variables: { keyId: string } };
+export type AuthVariables = {
+  keyId: string;
+  activityScope: string | null;
+  dailyLimit: number;
+  identityMode: string;
+};
+type AuthCtx = { Bindings: Env; Variables: AuthVariables };
 type KeyKind = "ingest" | "read";
+
+type KeyOptions = {
+  activityScope?: string | null;
+  allowedOrigin?: string | null;
+  dailyLimit?: number;
+  identityMode?: string;
+};
 
 export async function mintKey(
   db: D1Database,
   label: string,
   kind: KeyKind = "ingest",
+  options: KeyOptions = {},
 ): Promise<{ id: string; secret: string }> {
   const id = crypto.randomUUID();
   const secretBytes = crypto.getRandomValues(new Uint8Array(32));
   const secret = [...secretBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-  await new D1Storage(db).createKey(id, await sha256Hex(secret), label, kind);
+  await new D1Storage(db).createKey(id, await sha256Hex(secret), label, kind, options);
   return { id, secret };
 }
 
@@ -62,8 +76,21 @@ async function verifyKey(db: D1Database, id: string, secret: string, kind: KeyKi
   // Hash before the !key check so unknown-key and wrong-secret responses
   // do equal work (no key-id enumeration via response timing).
   const hash = await sha256Hex(secret);
-  if (!key || !timingSafeEqualStr(hash, key.secretHash) || key.kind !== kind) return null;
+  if (
+    !key ||
+    key.revokedAt !== null ||
+    !timingSafeEqualStr(hash, key.secretHash) ||
+    key.kind !== kind
+  ) return null;
   return key;
+}
+
+function setKeyContext(c: Parameters<MiddlewareHandler<AuthCtx>>[0], key: Awaited<ReturnType<typeof verifyKey>>) {
+  if (!key) return;
+  c.set("keyId", key.id);
+  c.set("activityScope", key.activityScope);
+  c.set("dailyLimit", key.dailyLimit);
+  c.set("identityMode", key.identityMode);
 }
 
 export const keyAuth: MiddlewareHandler<AuthCtx> = async (c, next) => {
@@ -71,7 +98,15 @@ export const keyAuth: MiddlewareHandler<AuthCtx> = async (c, next) => {
   if (!creds) return unauthorized(c);
   const key = await verifyKey(c.env.DB, creds.user, creds.pass, "ingest");
   if (!key) return unauthorized(c);
-  c.set("keyId", key.id);
+  const origin = c.req.header("Origin");
+  if (key.allowedOrigin && origin !== key.allowedOrigin) {
+    return c.json({ error: "This key is not permitted from this origin." }, 403);
+  }
+  if (key.trackingMode === "consent" && c.req.header("X-Proof-Consent") !== "granted") {
+    return c.json({ error: "Tracking consent must be granted before this instance accepts statements." }, 403);
+  }
+  setKeyContext(c, key);
+  await new D1Storage(c.env.DB).touchKey(key.id, new Date().toISOString());
   await next();
 };
 
@@ -82,12 +117,16 @@ export const readAuth: MiddlewareHandler<AuthCtx> = async (c, next) => {
     if (basic.user === "admin") {
       if (!(await verifyAdmin(c.env, basic.pass))) return unauthorized(c);
       c.set("keyId", "admin");
+      c.set("activityScope", null);
+      c.set("dailyLimit", Number.MAX_SAFE_INTEGER);
+      c.set("identityMode", "named");
       await next();
       return;
     }
     const key = await verifyKey(c.env.DB, basic.user, basic.pass, "read");
     if (!key) return unauthorized(c);
-    c.set("keyId", key.id);
+    setKeyContext(c, key);
+    await new D1Storage(c.env.DB).touchKey(key.id, new Date().toISOString());
     await next();
     return;
   }
@@ -98,7 +137,8 @@ export const readAuth: MiddlewareHandler<AuthCtx> = async (c, next) => {
   if (i < 0) return unauthorized(c);
   const key = await verifyKey(c.env.DB, token.slice(0, i), token.slice(i + 1), "read");
   if (!key) return unauthorized(c);
-  c.set("keyId", key.id);
+  setKeyContext(c, key);
+  await new D1Storage(c.env.DB).touchKey(key.id, new Date().toISOString());
   await next();
 };
 

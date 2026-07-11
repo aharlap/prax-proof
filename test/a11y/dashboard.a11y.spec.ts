@@ -47,6 +47,11 @@ test("about page has no axe violations", async ({ page }) => {
   await expectNoViolations(page);
 });
 
+test("privacy notice has no axe violations", async ({ page }) => {
+  await page.goto("/privacy");
+  await expectNoViolations(page);
+});
+
 test("activity list has no axe violations", async ({ page }) => {
   await page.goto("/dashboard");
   await expectNoViolations(page);
@@ -69,6 +74,11 @@ test("learner detail has no axe violations", async ({ page }) => {
 
 test("keys page has no axe violations", async ({ page }) => {
   await page.goto("/dashboard/keys");
+  await expectNoViolations(page);
+});
+
+test("settings page has no axe violations", async ({ page }) => {
+  await page.goto("/dashboard/settings");
   await expectNoViolations(page);
 });
 

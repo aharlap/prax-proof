@@ -7,3 +7,16 @@ rules = [{ type = "Text", globs = ["**/*.txt"], fallthrough = true }]
 binding = "DB"
 database_name = "proof"
 migrations_dir = "migrations"
+
+[[ratelimits]]
+name = "INGEST_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 120, period = 60 }
+
+[[ratelimits]]
+name = "ADMIN_RATE_LIMITER"
+namespace_id = "1002"
+simple = { limit = 10, period = 60 }
+
+[triggers]
+crons = ["17 * * * *"]

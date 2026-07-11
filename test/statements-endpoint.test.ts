@@ -43,6 +43,11 @@ describe("POST /xapi/statements", () => {
   it("rejects a bad version value", async () => {
     const res = await post(stmt(), { Authorization: AUTH, "X-Experience-API-Version": "0.9" });
     expect(res.status).toBe(400);
+    const prefixOnly = await post(stmt(), {
+      Authorization: AUTH,
+      "X-Experience-API-Version": "1.0-not-a-version",
+    });
+    expect(prefixOnly.status).toBe(400);
   });
 
   it("rejects invalid statements with a readable reason and docs link", async () => {

@@ -94,10 +94,10 @@ describe("activity detail", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("Fractions check");
-    expect(html).toContain("Attempts");
-    expect(html).toContain("Attempts — last 14 days");
+    expect(html).toContain("Recorded starts");
+    expect(html).toContain("Recorded starts — last 14 days");
     expect(html).toContain("Completion rate");
-    expect(html).toContain("1 of 1 learners");
+    expect(html).toContain("1 of 1 participants");
     expect(html).toContain("80%");        // avg scaled 0.8
     expect(html).toContain("5 min");      // median duration 312s
     expect(html).toContain("Lea R.");
@@ -165,7 +165,7 @@ describe("activity detail", () => {
     const html = await res.text();
     expect(html).toContain("Completion rate");
     expect(html).toContain("50%");
-    expect(html).toContain("1 of 2 learners");
+    expect(html).toContain("1 of 2 participants");
   });
 
   it("renders a live page link only when an activity has page_url", async () => {

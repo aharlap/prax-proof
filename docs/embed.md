@@ -15,7 +15,8 @@ anything that can run a script tag.
         data-activity="fractions-quiz"
         data-name="Fractions Quiz"
         data-key="KEY_ID:KEY_SECRET"
-        data-identity="ask"></script>
+        data-identity="anonymous"
+        data-tracking="notice"></script>
 <script>
   proof.start();
   proof.step("section-2", "Section 2 — Practice");
@@ -25,9 +26,14 @@ anything that can run a script tag.
 ```
 
 `data-name` is an optional human title shown on the dashboard. `proof.step(id, label?)`
-accepts an optional label for the dashboard funnel. The snippet also reports the
-page URL as origin + path only, never query strings or hashes, so the dashboard
-can link to the live page.
+accepts an optional label for the dashboard funnel. The snippet derives page
+location as origin + path only, never query strings or hashes. The server omits
+page location from anonymous and token-mode storage; named mode can retain the
+sanitized path so the dashboard can link to the live page.
+
+Show a visible learner notice linking to the instance's `/privacy` page before
+calling `proof.start()` or any other tracking method. Your instance's
+`/llms.txt` contains current notice/consent instructions for AI builders.
 
 ## What Proof can — and can't — tell you
 
@@ -35,10 +41,11 @@ In plain language, so you can decide if it fits before wiring anything up.
 
 **Proof can tell you:**
 
-- who started an activity and who finished it (and the completion rate)
+- how many distinct participant records sent any event, how many start events
+  were recorded, and how many participants finished
 - scores and pass/fail, when the activity reports them
 - what each learner answered on each question
-- where learners stopped — the drop-off, step by step
+- which participants reached each step and which had no later recorded step
 - which page the activity lives on, and when the activity happened
 
 **Proof can't tell you:**
@@ -59,9 +66,35 @@ In plain language, so you can decide if it fits before wiring anything up.
 
 | Mode | Learner experience | Dashboard shows |
 |------|--------------------|-----------------|
-| `anonymous` (default) | nothing | stable anonymous device rows |
-| `ask` | one name prompt, remembered on the device | the entered name |
-| `token` | nothing — identity rides `?plearner=TOKEN` links you hand out | one row per token |
+| `anonymous` (default) | nothing | a pseudonymous browser row; the server discards actor names, nested identity metadata, attachments, unsupported extensions, and page location, then irreversibly pseudonymizes the actor identifier |
+| `ask` | a name prompt on the first tracked event | the entered name for the current browser session |
+| `token` | nothing; identity rides `?plearner=TOKEN` links | one row per opaque token; Proof removes the parameter from the visible URL after reading it |
+
+Token values must be 16-128 characters using letters, digits, `_`, or `-`.
+Generate random, unguessable values. Never put a name, email, student number,
+or other direct identifier in the URL. An invalid or missing token falls back
+to an anonymous pseudonymous browser identifier.
+
+The browser identifier is namespaced to the Proof instance and activity and
+expires after one year. It is created lazily on the first enabled event, not
+when the script loads. `proof.resetIdentity()` clears it. Shared-device users
+should be given a visible way to reset it between learners.
+
+## Notice and consent modes
+
+`data-tracking="notice"` enables calls immediately; show the notice before the
+first call. `data-tracking="consent"` makes calls and H5P events no-ops until
+the learner opts in and your page calls `proof.enable()`.
+
+```js
+proof.enable();       // after opt-in
+proof.disable();      // stop future tracking
+proof.isEnabled();    // current state
+proof.resetIdentity();
+```
+
+Do not call `proof.start()` before rendering the notice. For consent mode,
+offer an equally usable "Continue without tracking" path.
 
 ## Track H5P content
 
@@ -94,10 +127,37 @@ Plausible and Umami snippets carry no credential at all — just a public
 site identifier — and their ingest endpoints accept events from anyone who
 knows it. Proof requires the key, ingest keys are write-only by construction
 (reading results requires a separate read key; see docs/api.md), and every key
-is rate-limited. The
+is activity-scoped by default, revocable, attributable, daily-capped, and
+rate-limited. Configure the key's allowed origin for browser embeds. The
 worst an exposed key allows is junk data, never reading results. Rotate a
-key by minting a new one and updating the page. A per-key origin allowlist
-(server-side, stricter than any snippet-level check) is on the roadmap.
+key by minting a new one and updating the page, then revoke the old key.
+
+## Privacy and operator responsibilities
+
+Proof is privacy-aware infrastructure, not a compliance certification. The
+operator decides the purpose and legal basis for collection and remains
+responsible for notices, consent where required, data minimization, retention,
+access controls, incident response, processor/vendor assessment, and learner
+access/correction/export/deletion requests.
+
+Names, email addresses, student numbers, and linkable tokens can make records
+identifiable. Use anonymous mode unless identifiable information is necessary
+for the learning purpose. Configure the operator/contact/retention/region copy
+on `/dashboard/settings`, and test the authenticated learner export and delete
+controls before publication.
+
+Anonymous mode pseudonymizes the actor and filters unsupported metadata; it
+does not make the learning content itself anonymous. A free-text response can
+still contain a name, email address, health detail, or other identifier. Do not
+ask for identifying responses unless they are necessary, disclosed, and covered
+by the operator's data practice.
+
+Laws vary by operator and learner location. Relevant starting points include
+the official [PIPEDA guidance from the Office of the Privacy Commissioner of Canada](https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/),
+[Quebec Commission d'accès à l'information Law 25 resources](https://www.cai.gouv.qc.ca/protection-renseignements-personnels/sujets-dinteret/loi-25),
+and the [European Commission overview of EU data protection](https://commission.europa.eu/law/law-topic/data-protection/data-protection-eu_en).
+Get qualified advice for the actual context; do not tell learners that using
+Proof itself makes an activity compliant.
 
 ## Failure behavior
 

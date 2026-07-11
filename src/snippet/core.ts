@@ -18,6 +18,12 @@ export interface Actor {
   name?: string;
 }
 
+const OPAQUE_TOKEN = /^[A-Za-z0-9_-]{16,128}$/;
+
+export function isOpaqueLearnerToken(value: string): boolean {
+  return OPAQUE_TOKEN.test(value);
+}
+
 const VERBS = {
   start: "http://adlnet.gov/expapi/verbs/initialized",
   step: "http://adlnet.gov/expapi/verbs/progressed",
@@ -37,7 +43,9 @@ function deviceId(a: IdentityAdapters): string {
 export function resolveIdentity(mode: IdentityMode, a: IdentityAdapters): Actor {
   if (mode === "token") {
     const token = a.urlParam("plearner");
-    if (token) return { account: { homePage: a.origin, name: token } };
+    if (token && isOpaqueLearnerToken(token)) {
+      return { account: { homePage: a.origin, name: token } };
+    }
     return resolveIdentity("anonymous", a);
   }
   const actor: Actor = { account: { homePage: a.origin, name: deviceId(a) } };

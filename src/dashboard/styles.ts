@@ -23,7 +23,7 @@ export const DASHBOARD_CSS = `
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--prax-color-bg); color: var(--prax-color-ink);
-  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 16px; line-height: 1.55; font-weight: 400;
 }
 a { color: var(--prax-color-accent); }
@@ -38,9 +38,9 @@ header.prax-top {
   border-bottom: 3px solid var(--prax-color-accent); background: var(--prax-color-surface);
   padding: 0.75rem 1.25rem;
 }
-header.prax-top strong { font-family: "Nunito", "Poppins", -apple-system, sans-serif; font-weight: 800; }
+header.prax-top strong { font-weight: 800; }
 main { max-width: 960px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
-h1, h2 { font-family: "Nunito", "Poppins", -apple-system, sans-serif; font-weight: 800; }
+h1, h2 { font-weight: 800; }
 h1 { font-size: 1.5rem; margin: 0.5rem 0 1rem; }
 h1::after { content: ""; display: block; width: 3.5rem; height: 4px; background: var(--prax-color-accent-2); margin-top: 0.35rem; border-radius: 2px; }
 h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; }
@@ -74,4 +74,18 @@ td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--prax-color-line); }
 .prax-soft { color: var(--prax-color-ink-soft); }
 .prax-empty { background: var(--prax-color-surface); border: 1px dashed var(--prax-color-line);
   border-radius: var(--prax-radius); padding: 2rem; text-align: center; color: var(--prax-color-ink-soft); }
+form.prax-form { display: grid; grid-template-columns: minmax(10rem, 14rem) minmax(12rem, 1fr); gap: 0.75rem 1rem; align-items: center; max-width: 48rem; }
+form.prax-form input, form.prax-form select { width: 100%; }
+form.prax-form .prax-form-actions { grid-column: 2; }
+.prax-danger { color: #8B1E1E; }
+@media (max-width: 640px) {
+  header.prax-top { line-height: 2; }
+  main { padding: 1rem 0.75rem 3rem; }
+  form.prax-form { grid-template-columns: 1fr; }
+  form.prax-form .prax-form-actions { grid-column: 1; }
+  .prax-stats { gap: 0.6rem; }
+  .prax-stat { flex-basis: calc(50% - 0.6rem); }
+  .prax-track { width: 5rem; }
+  th, td { padding: 0.5rem; }
+}
 `;

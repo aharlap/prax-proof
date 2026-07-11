@@ -51,12 +51,13 @@ describe("summary JSON API", () => {
     expect(res.headers.get("Cache-Control")).toBe("no-store");
     const activities = (await res.json()) as {
       iri: string;
-      attempts: number;
+      starts: number;
+      participants: number;
       completions: number;
       pageUrl: string | null;
     }[];
     const activity = activities.find((row) => row.iri === IRI);
-    expect(activity).toMatchObject({ attempts: 2, completions: 1, pageUrl: null });
+    expect(activity).toMatchObject({ starts: 2, participants: 2, completions: 1, pageUrl: null });
     expect(activity).not.toHaveProperty("firstSeen");
   });
 
@@ -65,7 +66,8 @@ describe("summary JSON API", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       stats: {
-        started: number;
+        starts: number;
+        participants: number;
         completions: number;
         completionRate: number;
         avgScoreScaled: number;
@@ -81,14 +83,15 @@ describe("summary JSON API", () => {
       }[];
     };
     expect(body.stats).toMatchObject({
-      started: 2,
+      starts: 2,
+      participants: 2,
       completions: 1,
       completionRate: 0.5,
       avgScoreScaled: 0.8,
       medianDurationSec: 312,
     });
-    expect(body.funnel[0]).toMatchObject({ step: "__started__", learners: 2, retention: 1 });
-    expect(body.funnel.find((row) => row.step === "q:q2")).toMatchObject({ retention: 0.5, dropOff: 1 });
+    expect(body.funnel[0]).toMatchObject({ step: "__participants__", learners: 2, retention: 1, dropOff: 1 });
+    expect(body.funnel.find((row) => row.step === "q:q2")).toMatchObject({ retention: 0.5, dropOff: 0 });
     expect(body.funnel.at(-1)).toMatchObject({ step: "__finished__", learners: 1, dropOff: 0 });
     expect(body.learners).toHaveLength(2);
 
@@ -103,12 +106,56 @@ describe("summary JSON API", () => {
     expect(other.responses).toEqual([]);
   });
 
+  it("reports activity-wide question counts beyond the current learner page", async () => {
+    const iri = `https://proof.test/a/api-bulk-${crypto.randomUUID()}`;
+    const questionIri = `${iri}/q/bulk-question`;
+    await env.DB.prepare("INSERT INTO activities (iri, name) VALUES (?, ?), (?, ?)")
+      .bind(iri, "Bulk activity", questionIri, "Bulk question")
+      .run();
+    await env.DB.prepare(
+      `WITH RECURSIVE sequence(n) AS (
+         SELECT 1 UNION ALL SELECT n + 1 FROM sequence WHERE n < 501
+       )
+       INSERT INTO learners (id, identity, display_name)
+       SELECT printf('bulk-learner-%03d', n), printf('bulk-identity-%03d', n), NULL FROM sequence`,
+    ).run();
+    await env.DB.prepare(
+      `WITH RECURSIVE sequence(n) AS (
+         SELECT 1 UNION ALL SELECT n + 1 FROM sequence WHERE n < 501
+       )
+       INSERT INTO statements
+         (id, raw, verb, activity_iri, learner_id, success, timestamp, stored, response)
+       SELECT printf('bulk-statement-%03d', n), '{}',
+              'http://adlnet.gov/expapi/verbs/answered', ?, printf('bulk-learner-%03d', n),
+              CASE WHEN n % 2 = 0 THEN 1 ELSE 0 END,
+              '2026-07-09T10:00:00.000Z', '2026-07-09T10:00:00.000Z', 'answer'
+       FROM sequence`,
+    ).bind(questionIri).run();
+
+    const res = await apiGet(`/api/activity?iri=${encodeURIComponent(iri)}&page=1&perPage=1`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      learners: unknown[];
+      questionBreakdown: { questionId: string; answered: number; correct: number; knownCorrectness: number }[];
+      pagination: { totalParticipants: number; hasMore: boolean };
+    };
+    expect(body.learners).toHaveLength(1);
+    expect(body.pagination).toEqual(expect.objectContaining({ totalParticipants: 501, hasMore: true }));
+    expect(body.questionBreakdown).toEqual([{
+      questionId: "bulk-question",
+      questionLabel: "Bulk question",
+      answered: 501,
+      correct: 250,
+      knownCorrectness: 501,
+    }]);
+  });
+
   it("resolves activity summaries by slug", async () => {
     const res = await apiGet("/api/activity?slug=api-quiz");
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { activity: { iri: string }; stats: { started: number } };
+    const body = (await res.json()) as { activity: { iri: string }; stats: { starts: number } };
     expect(body.activity.iri).toBe(IRI);
-    expect(body.stats.started).toBe(2);
+    expect(body.stats.starts).toBe(2);
   });
 
   it("returns a markdown activity report for a read key", async () => {
@@ -116,9 +163,10 @@ describe("summary JSON API", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
     const body = await res.text();
-    expect(body).toContain("# Fractions check");
+    expect(body).toContain("# Proof activity report");
+    expect(body).toContain("Activity: Fractions check");
     expect(body).toContain("completed (");
-    expect(body).toMatch(/\| Q q2 \| 1 \| 50% \| −1 ← biggest drop-off \|/);
+    expect(body).toMatch(/\| Participants \| 2 \| 100% \| −1 ← biggest drop-off \|/);
     expect(body).toContain("| Learner | Status | Score | Last seen |");
     expect(body).toContain("- q1: 1 answered, 100% correct");
     expect(body).toContain("*Generated by Proof (https://proof.test) at ");
@@ -127,8 +175,8 @@ describe("summary JSON API", () => {
   it("omits synthetic funnel rows for activities without step data", async () => {
     const res = await apiGet(`/api/activity?iri=${encodeURIComponent(STEPLESS_IRI)}`);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { funnel: unknown[]; stats: { started: number; completions: number } };
-    expect(body.stats).toMatchObject({ started: 1, completions: 1 });
+    const body = (await res.json()) as { funnel: unknown[]; stats: { starts: number; participants: number; completions: number } };
+    expect(body.stats).toMatchObject({ starts: 1, participants: 1, completions: 1 });
     expect(body.funnel).toEqual([]);
 
     const md = await apiGet(`/api/activity.md?iri=${encodeURIComponent(STEPLESS_IRI)}`);
@@ -141,7 +189,7 @@ describe("summary JSON API", () => {
   it("resolves markdown activity reports by slug", async () => {
     const res = await apiGet("/api/activity.md?slug=api-quiz");
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("# Fractions check");
+    expect(await res.text()).toContain("Activity: Fractions check");
   });
 
   it("flags UUID account-name learners as anonymous", async () => {

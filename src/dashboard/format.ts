@@ -18,6 +18,7 @@ export function humanizeStep(id: string): string {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ACCOUNT_UUID_RE = /\|([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+const ANONYMOUS_HASH_RE = /^anonymous:([0-9a-f]{64})$/i;
 
 function anonymousLabel(uuid: string): string {
   return `Anonymous · ${uuid.slice(0, 4)}`;
@@ -25,6 +26,8 @@ function anonymousLabel(uuid: string): string {
 
 export function displayLabel(label: string): string {
   if (UUID_RE.test(label)) return anonymousLabel(label);
+  const anonymousHash = ANONYMOUS_HASH_RE.exec(label);
+  if (anonymousHash) return `Anonymous · ${anonymousHash[1].slice(0, 4)}`;
   const match = ACCOUNT_UUID_RE.exec(label);
   return match ? anonymousLabel(match[1]) : label;
 }

@@ -55,14 +55,14 @@ describe("resolveIdentity", () => {
   });
 
   it("token uses the plearner URL param and degrades to anonymous without it", () => {
-    const withToken = resolveIdentity("token", fakeAdapters({ urlParam: (n) => (n === "plearner" ? "tok-7f3a" : null) }));
-    expect(withToken.account.name).toBe("tok-7f3a");
+    const withToken = resolveIdentity("token", fakeAdapters({ urlParam: (n) => (n === "plearner" ? "tok_7f3a_92c4b681" : null) }));
+    expect(withToken.account.name).toBe("tok_7f3a_92c4b681");
     const without = resolveIdentity("token", fakeAdapters());
     expect(without.account.name).toBe("device-uuid-1");
   });
 
   it("token mode does not store a device id when the URL token is present", () => {
-    const a = fakeAdapters({ urlParam: (n) => (n === "plearner" ? "tok-7f3a" : null) });
+    const a = fakeAdapters({ urlParam: (n) => (n === "plearner" ? "tok_7f3a_92c4b681" : null) });
     resolveIdentity("token", a);
     expect(a.store.has("proof:device")).toBe(false);
   });

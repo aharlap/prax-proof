@@ -1,15 +1,21 @@
 // SPDX-License-Identifier: MIT
 import { z } from "zod";
 
-const iri = z.string().url();
+export const MAX_STATEMENTS_PER_REQUEST = 10;
 
-const account = z.object({ homePage: iri, name: z.string().min(1) }).passthrough();
+const MAX_IRI_LENGTH = 2048;
+const MAX_NAME_LENGTH = 256;
+const MAX_RESPONSE_LENGTH = 16 * 1024;
+
+const iri = z.string().url().max(MAX_IRI_LENGTH);
+
+const account = z.object({ homePage: iri, name: z.string().min(1).max(MAX_NAME_LENGTH) }).passthrough();
 
 const actorSchema = z
   .object({
     objectType: z.literal("Agent").optional(),
-    name: z.string().optional(),
-    mbox: z.string().regex(/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/).optional(),
+    name: z.string().max(MAX_NAME_LENGTH).optional(),
+    mbox: z.string().max(MAX_NAME_LENGTH).regex(/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/).optional(),
     mbox_sha1sum: z.string().regex(/^[0-9a-f]{40}$/).optional(),
     openid: iri.optional(),
     account: account.optional(),
@@ -21,7 +27,7 @@ const actorSchema = z
   );
 
 const verbSchema = z
-  .object({ id: iri, display: z.record(z.string(), z.string()).optional() })
+  .object({ id: iri, display: z.record(z.string(), z.string().max(MAX_NAME_LENGTH)).optional() })
   .passthrough();
 
 const activityObject = z
@@ -29,7 +35,7 @@ const activityObject = z
     objectType: z.literal("Activity").optional(),
     id: iri,
     definition: z
-      .object({ name: z.record(z.string(), z.string()).optional() })
+      .object({ name: z.record(z.string(), z.string().max(MAX_NAME_LENGTH)).optional() })
       .passthrough()
       .optional(),
   })
@@ -61,7 +67,8 @@ export const statementSchema = z
         score: scoreSchema.optional(),
         success: z.boolean().optional(),
         completion: z.boolean().optional(),
-        duration: z.string().optional(),
+        duration: z.string().max(128).optional(),
+        response: z.string().max(MAX_RESPONSE_LENGTH).optional(),
       })
       .passthrough()
       .optional(),
@@ -76,6 +83,12 @@ export function parseStatements(
   body: unknown,
 ): { ok: true; statements: ValidStatement[] } | { ok: false; error: string } {
   const batch = Array.isArray(body) ? body : [body];
+  if (batch.length > MAX_STATEMENTS_PER_REQUEST) {
+    return {
+      ok: false,
+      error: `A request may contain at most ${MAX_STATEMENTS_PER_REQUEST} statements.`,
+    };
+  }
   const out: ValidStatement[] = [];
   for (let i = 0; i < batch.length; i++) {
     const r = statementSchema.safeParse(batch[i]);

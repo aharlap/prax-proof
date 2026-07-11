@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { SELF } from "cloudflare:test";
+import { env, SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { KeysPage } from "../src/dashboard/routes";
 import { ADMIN } from "./helpers";
@@ -23,6 +23,23 @@ describe("keys page", () => {
     expect(html).not.toContain("No keys yet.</p>");
   });
 
+  it("separates legacy unattributed statements from per-key usage", async () => {
+    await env.DB.prepare(
+      `INSERT INTO statements (id, raw, verb, timestamp, stored, key_id)
+       VALUES (?, '{}', 'http://adlnet.gov/expapi/verbs/initialized', ?, ?, NULL)`,
+    ).bind(
+      crypto.randomUUID(),
+      "2026-07-09T10:00:00.000Z",
+      "2026-07-09T10:00:00.000Z",
+    ).run();
+
+    const res = await SELF.fetch("https://proof.test/dashboard/keys", { headers: ADMIN });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("1 legacy statement predates key attribution");
+    expect(html).toContain("cannot be assigned to a key accurately");
+  });
+
   it("mints a key via the form and shows the secret once", async () => {
     const res = await SELF.fetch("https://proof.test/dashboard/keys", {
       method: "POST",
@@ -35,12 +52,12 @@ describe("keys page", () => {
     expect(html).toContain("Form minted");
     expect(html).toContain('id="minted-key"');
     expect(html).toContain("<h2>Key created</h2>");
-    expect(html.indexOf('id="minted-key"')).toBeLessThan(html.indexOf("Label for the new key"));
+    expect(html.indexOf('id="minted-key"')).toBeLessThan(html.indexOf("Activity title"));
     expect(html).toContain("data-key=");            // embed sample
     expect(html).toContain("data-name=");
     expect(html).toContain("Or paste this prompt into your AI builder (Claude, ChatGPT, Gemini):");
     expect(html).toContain("Fetch https://proof.test/llms.txt and follow its instructions exactly");
-    expect(html).toContain("and pick a short kebab-case data-activity slug plus a human data-name");
+    expect(html).toContain('data-activity=&quot;form-minted&quot;');
     const keyId = html.match(/id: <code>([^<]+)<\/code>/)?.[1];
     expect(keyId).toBeTruthy();
     expect(html).toContain(`Use data-key=&quot;${keyId}:`);

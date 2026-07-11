@@ -75,7 +75,7 @@ test("H5P events reach the Proof dashboard via data-h5p", async ({ page, request
 
   const dash = await dashboardBody();
   expect(dash).toContain("Fractions quiz"); // activity named from H5P's own event title
-  expect(dash).toContain("View live page"); // page extension captured (origin+path, no query)
+  expect(dash).not.toContain("View live page"); // anonymous mode omits page-location metadata
   expect(dash).toContain("100%"); // 1 attempted, 1 completed
   expect(dash).toContain("80%"); // avg score from the 8/10 completion
   expect(dash).toContain("8 / 10"); // the completion's score in the roster
@@ -96,4 +96,84 @@ test("H5P events reach the Proof dashboard via data-h5p", async ({ page, request
 
   expect(posts.length).toBeGreaterThanOrEqual(3); // attempted + answered + completed
 
+});
+
+test("consent mode sends nothing before enable and declares consent afterward", async ({ page, request }) => {
+  const setConsent = await request.post("/dashboard/settings", {
+    headers: {
+      Authorization: ADMIN,
+      Origin: ORIGIN,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    form: {
+      operatorName: "Field test",
+      privacyUrl: "",
+      privacyContact: "",
+      regionLabel: "",
+      retentionDays: "365",
+      trackingMode: "consent",
+    },
+  });
+  expect(setConsent.status()).toBe(200);
+
+  try {
+    const scope = `${ORIGIN}/a/consent-field`;
+    const mint = await request.post("/admin/keys", {
+      headers: { Authorization: ADMIN },
+      data: { label: "consent field test", activityScope: scope },
+    });
+    expect(mint.status()).toBe(201);
+    const key = (await mint.json()) as { id: string; secret: string };
+    const html = `<!doctype html><html><body>
+      <script src="${ORIGIN}/p.js" data-activity="consent-field"
+        data-key="${key.id}:${key.secret}" data-tracking="consent"></script>
+    </body></html>`;
+    await page.route(`${ORIGIN}/consent-field-page`, (route) =>
+      route.fulfill({ contentType: "text/html", body: html }),
+    );
+    const statementHeaders: Record<string, string>[] = [];
+    page.on("request", (sent) => {
+      if (sent.url().endsWith("/xapi/statements")) statementHeaders.push(sent.headers());
+    });
+
+    await page.goto(`${ORIGIN}/consent-field-page`);
+    await expect.poll(() => page.evaluate(() => typeof (window as unknown as {
+      proof?: { start(): void };
+    }).proof?.start)).toBe("function");
+    expect(await page.evaluate(() => (window as unknown as {
+      proof: { isEnabled(): boolean };
+    }).proof.isEnabled())).toBe(false);
+    await page.evaluate(() => (window as unknown as { proof: { start(): void } }).proof.start());
+    await page.waitForTimeout(300);
+    expect(statementHeaders).toHaveLength(0);
+
+    await page.evaluate(() => {
+      const proof = (window as unknown as { proof: { enable(): void; start(): void } }).proof;
+      proof.enable();
+      proof.start();
+    });
+    await expect.poll(() => statementHeaders.length).toBe(1);
+    expect(statementHeaders[0]["x-proof-consent"]).toBe("granted");
+    await expect.poll(async () => (
+      await request.get(`/dashboard/activity?iri=${encodeURIComponent(scope)}`, {
+        headers: { Authorization: ADMIN },
+      })
+    ).status()).toBe(200);
+  } finally {
+    await request.post("/dashboard/settings", {
+      headers: {
+        Authorization: ADMIN,
+        Origin: ORIGIN,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      form: {
+        operatorName: "Field test",
+        privacyUrl: "",
+        privacyContact: "",
+        regionLabel: "",
+        retentionDays: "365",
+        trackingMode: "notice",
+      },
+    });
+  }
 });
