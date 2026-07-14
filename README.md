@@ -30,11 +30,14 @@ Need a full conformant LRS? Use [lrsql](https://github.com/yetanalytics/lrsql) â
 
 ## Status
 
-Pre-release. Ingest, privacy controls, reporting, retention, and Cloudflare
+Available. Ingest, privacy controls, reporting, retention, and Cloudflare
 deployment are functional and hardened. Local Worker/D1 tests, migration
 upgrade rehearsal, real-browser field tests, typecheck, and desktop/mobile axe
-gates are in place. Remote-D1 and first-time deploy canaries remain release
-validation items.
+gates are in place. The remote-D1 and first-time "Deploy to Cloudflare"
+canaries passed on 2026-07-14: a fresh Worker and remote D1 applied every
+migration, ingested statements (including an idempotent replay), and reported
+correct participant and completion counts. The Docker/SQLite package remains a
+documented fast-follow.
 
 ## Quickstart (local)
 

@@ -1,4 +1,11 @@
 -- SPDX-License-Identifier: MIT
+-- Trigger bodies avoid CASE...END and use SELECT ... WHERE for aborts.
+-- Cloudflare D1's remote migration runner tracks BEGIN/END to keep trigger
+-- bodies intact; a CASE...END inside or around the body closes that count
+-- early, so the remote D1 API receives a truncated statement and rejects it
+-- (SQLITE_ERROR 7500 "incomplete input"). Local miniflare tolerates it; remote
+-- does not. Identity-mode ranking is expressed arithmetically for the same
+-- reason (anonymous < token < named).
 ALTER TABLE statements ADD COLUMN canonical_hash TEXT;
 ALTER TABLE statements ADD COLUMN policy_iri TEXT;
 ALTER TABLE statements ADD COLUMN identity_mode TEXT;
@@ -31,12 +38,11 @@ WHEN NEW.policy_iri IS NOT NULL
   AND EXISTS (
     SELECT 1 FROM activity_policies policy
     WHERE policy.activity_iri = NEW.policy_iri
-      AND CASE policy.identity_mode
-            WHEN 'anonymous' THEN 1 WHEN 'token' THEN 2 ELSE 3
-          END
-          < CASE NEW.identity_mode
-              WHEN 'anonymous' THEN 1 WHEN 'token' THEN 2 ELSE 3
-            END
+      AND (
+        (policy.identity_mode = 'token') + (policy.identity_mode = 'named') * 2
+      ) < (
+        (NEW.identity_mode = 'token') + (NEW.identity_mode = 'named') * 2
+      )
   )
 BEGIN
   SELECT RAISE(ABORT, 'proof_identity_policy_changed');
@@ -51,9 +57,9 @@ BEGIN
   ON CONFLICT(key_id, day) DO UPDATE SET
     statement_count = statement_count + 1;
 
-  SELECT CASE WHEN (
+  SELECT RAISE(ABORT, 'proof_quota_exceeded')
+  WHERE (
     SELECT statement_count FROM ingest_usage
     WHERE key_id = NEW.key_id AND day = substr(NEW.stored, 1, 10)
-  ) > COALESCE((SELECT daily_limit FROM keys WHERE id = NEW.key_id), 0)
-  THEN RAISE(ABORT, 'proof_quota_exceeded') END;
+  ) > COALESCE((SELECT daily_limit FROM keys WHERE id = NEW.key_id), 0);
 END;
