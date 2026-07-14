@@ -32,6 +32,19 @@ the Keys page. New dashboard keys are scoped to one activity by default and can
 be restricted to the website origin that hosts it. Then complete the Privacy
 and retention settings page before sharing the activity with learners.
 
+## Forgot your admin password?
+
+Proof has no accounts and no password-reset email. The login is always the
+username `admin` plus the `ADMIN_PASSWORD` secret, so recovery means setting a
+new secret on your own Worker. You do not lose any data.
+
+    wrangler secret put ADMIN_PASSWORD --name YOUR-WORKER
+
+Or set it in the Cloudflare dashboard: Workers &amp; Pages, your Worker,
+Settings, Variables and Secrets, edit `ADMIN_PASSWORD`. The change takes effect
+within a few seconds. Existing ingest and read keys keep working; only the
+admin login uses this password.
+
 ## Region and jurisdiction
 
 Create the DB manually before the first deploy:
