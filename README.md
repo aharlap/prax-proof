@@ -99,3 +99,15 @@ The version header `X-Experience-API-Version: 1.0.x` is required on
 ## License
 
 MIT. Every source file carries an SPDX header.
+
+## Credit this work
+
+If Proof saves you time, please help others find the original work by including
+this credit wherever it fits:
+
+> **Proof** by [Ariel Harlap at Praxity.io](https://praxity.io/en/about/) —
+> [source](https://github.com/Praxity/prax-proof)
+
+The MIT license requires the copyright and permission notice to remain in
+copies or substantial portions of the software. This visible credit is
+appreciated, but it is not an additional license condition.
