@@ -9,8 +9,22 @@ export default defineConfig({
     httpCredentials: { username: "admin", password: "a11y-test-pw" },
   },
   projects: [
-    { name: "desktop", use: { viewport: { width: 1280, height: 900 } } },
-    { name: "mobile", use: { ...devices["iPhone 13"], browserName: "chromium" } },
+    {
+      name: "desktop-chromium",
+      use: { browserName: "chromium", viewport: { width: 1280, height: 900 } },
+    },
+    {
+      name: "mobile-chromium",
+      use: { ...devices["iPhone 13"], browserName: "chromium" },
+    },
+    {
+      name: "desktop-webkit",
+      use: { browserName: "webkit", viewport: { width: 1280, height: 900 } },
+    },
+    {
+      name: "mobile-webkit",
+      use: { ...devices["iPhone 13"], browserName: "webkit" },
+    },
   ],
   webServer: {
     command:

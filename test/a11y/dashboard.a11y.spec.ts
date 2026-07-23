@@ -82,10 +82,66 @@ test("settings page has no axe violations", async ({ page }) => {
   await expectNoViolations(page);
 });
 
-test("first Tab reveals the skip link", async ({ page }) => {
+test("keyboard reveals and activates the skip link", async ({ page, browserName }) => {
   await page.goto("/dashboard");
-  await page.keyboard.press("Tab");
+  await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
   const focused = page.locator(":focus");
   await expect(focused).toHaveText("Skip to content");
   await expect(focused).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main")).toBeFocused();
+});
+
+test("wide tables are named keyboard-scrollable regions", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/dashboard/keys");
+  const region = page.getByRole("region", {
+    name: "Existing keys (secrets are never shown again)",
+  });
+  await expect(region).toHaveAttribute("tabindex", "0");
+  const before = await region.evaluate((element) => ({
+    left: element.scrollLeft,
+    client: element.clientWidth,
+    scroll: element.scrollWidth,
+  }));
+  expect(before.scroll).toBeGreaterThan(before.client);
+  await region.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => region.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+});
+
+test("post-create secret remains within a 320 CSS pixel viewport", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/dashboard/keys");
+  const slug = `reflow-${testInfo.project.name.replace(/[^a-z0-9]+/g, "-")}`;
+  await page.getByLabel("Activity title").fill(`Reflow ${testInfo.project.name}`);
+  await page.getByLabel("Activity slug").fill(slug);
+  await page.getByRole("button", { name: "Create scoped key" }).click();
+  await expect(page.getByRole("heading", { name: "Key created" })).toBeFocused();
+  await expect(page.locator("body")).toHaveCSS("margin", "0px");
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    page: document.documentElement.scrollWidth,
+    codeBlocksFit: [...document.querySelectorAll("#minted-key pre")]
+      .every((element) => element.scrollWidth <= element.clientWidth),
+  }));
+  expect(widths.page).toBeLessThanOrEqual(widths.viewport);
+  expect(widths.codeBlocksFit).toBe(true);
+});
+
+test("destructive actions lead to accessible review screens", async ({ page }) => {
+  await page.goto("/dashboard/keys");
+  const revokeLinks = page.getByRole("link", { name: /^Revoke key .+, id ending / });
+  await expect(revokeLinks.first()).toBeVisible();
+  await revokeLinks.first().click();
+  await expect(page.getByRole("heading", { name: "Revoke this key?" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Cancel and return to keys" })).toBeVisible();
+  await expectNoViolations(page);
+
+  await page.goto(`/dashboard/activity?iri=${encodeURIComponent(IRI)}`);
+  await page.locator("table a").first().click();
+  await page.getByRole("link", { name: "Review deletion of this learner and all statements" }).click();
+  await expect(page.getByRole("heading", { name: /^Delete .+\?$/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Cancel and return to learner" })).toBeVisible();
+  await expectNoViolations(page);
 });

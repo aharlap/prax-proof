@@ -11,7 +11,7 @@ export function Landing() {
       </head>
       <body>
         <a class="prax-skip" href="#main">Skip to content</a>
-        <main id="main">
+        <main id="main" tabindex={-1}>
           <h1>Proof</h1>
           <p>
             This site collects learning results for activities its owner runs. Learner data stays on the owner's own Cloudflare account.

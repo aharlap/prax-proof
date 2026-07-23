@@ -29,6 +29,8 @@ body {
 a { color: var(--prax-color-accent); }
 :focus-visible { outline: 3px solid var(--prax-color-focus); outline-offset: 2px; }
 input, select, button { border: 1px solid var(--prax-color-ink-soft); border-radius: 4px; padding: 0.35rem 0.6rem; background: var(--prax-color-surface); font: inherit; }
+code, pre { overflow-wrap: anywhere; }
+pre { max-width: 100%; white-space: pre-wrap; }
 .prax-skip {
   position: absolute; left: -999px; top: 0; background: var(--prax-color-surface);
   padding: 0.5rem 1rem; z-index: 10;
@@ -39,6 +41,8 @@ header.prax-top {
   padding: 0.75rem 1.25rem;
 }
 header.prax-top strong { font-weight: 800; }
+header.prax-top nav { display: inline; }
+header.prax-top [aria-current="page"] { color: var(--prax-color-ink); font-weight: 700; }
 main { max-width: 960px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
 h1, h2 { font-weight: 800; }
 h1 { font-size: 1.5rem; margin: 0.5rem 0 1rem; }
@@ -47,7 +51,7 @@ h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; }
 table { width: 100%; border-collapse: collapse; background: var(--prax-color-surface);
   border: 1px solid var(--prax-color-line); border-radius: var(--prax-radius);
   box-shadow: var(--prax-offset-shadow); }
-.prax-table-wrap { overflow-x: auto; }
+.prax-table-wrap { max-width: 100%; overflow-x: auto; }
 caption { text-align: left; font-size: 0.85rem; color: var(--prax-color-ink-soft); margin-bottom: 0.5rem; }
 th { text-align: left; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--prax-color-ink-soft); font-weight: 500; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--prax-color-line); }
@@ -67,9 +71,11 @@ td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--prax-color-line); }
 .prax-badge.open { background: var(--prax-color-warn-soft); color: var(--prax-color-ink); }
 .prax-bars { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
 .prax-bar { display: grid; grid-template-columns: 7rem 1fr auto; gap: 0.75rem; align-items: center; font-size: 0.85rem; }
-.prax-bar .fill { background: var(--prax-color-accent); height: 1rem; border-radius: 3px; min-width: 2px; }
+.prax-bar .fill { background: var(--prax-color-accent); height: 1rem; border-radius: 3px; }
+.prax-bar .fill.has-value { min-width: 2px; }
 .prax-track { width: 9rem; height: 0.9rem; background: var(--prax-color-line); border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 0.5rem; }
-.prax-track-fill { height: 100%; background: var(--prax-color-accent); border-radius: 3px; min-width: 2px; }
+.prax-track-fill { height: 100%; background: var(--prax-color-accent); border-radius: 3px; }
+.prax-track-fill[data-has-value="true"] { min-width: 2px; }
 .prax-drop-row td { background: var(--prax-color-pink-soft); }
 .prax-soft { color: var(--prax-color-ink-soft); }
 .prax-empty { background: var(--prax-color-surface); border: 1px dashed var(--prax-color-line);
@@ -77,12 +83,25 @@ td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--prax-color-line); }
 form.prax-form { display: grid; grid-template-columns: minmax(10rem, 14rem) minmax(12rem, 1fr); gap: 0.75rem 1rem; align-items: center; max-width: 48rem; }
 form.prax-form input, form.prax-form select { width: 100%; }
 form.prax-form .prax-form-actions { grid-column: 2; }
+.prax-field-help { grid-column: 2; margin: -0.5rem 0 0; color: var(--prax-color-ink-soft); font-size: 0.9rem; }
+.prax-message, .prax-error {
+  background: var(--prax-color-surface); border-left: 4px solid var(--prax-color-accent);
+  padding: 0.75rem 1rem; margin: 1rem 0;
+}
+.prax-error { border-left-color: #8B1E1E; }
+.prax-error h2 { margin-top: 0; }
+.prax-actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.prax-visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 .prax-danger { color: #8B1E1E; }
 @media (max-width: 640px) {
   header.prax-top { line-height: 2; }
   main { padding: 1rem 0.75rem 3rem; }
   form.prax-form { grid-template-columns: 1fr; }
   form.prax-form .prax-form-actions { grid-column: 1; }
+  .prax-field-help { grid-column: 1; }
   .prax-stats { gap: 0.6rem; }
   .prax-stat { flex-basis: calc(50% - 0.6rem); }
   .prax-track { width: 5rem; }

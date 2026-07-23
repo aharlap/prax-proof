@@ -12,6 +12,7 @@ import { LLMS_TXT } from "./llms";
 import { aboutHandler } from "./about";
 import { landingHandler } from "./landing";
 import { DASHBOARD_CSS } from "./dashboard/styles";
+import { DASHBOARD_JS } from "./dashboard/ui";
 import { dashboardRoutes } from "./dashboard/routes";
 import { apiRoutes } from "./api/routes";
 import { privacyHandler } from "./privacy";
@@ -261,6 +262,12 @@ app.delete("/admin/learners/:id", adminPlatformLimit, adminAuth, async (c) => {
 app.get("/dashboard.css", (c) =>
   c.body(DASHBOARD_CSS, 200, {
     "Content-Type": "text/css; charset=utf-8",
+    "Cache-Control": "public, max-age=300",
+  }),
+);
+app.get("/dashboard.js", (c) =>
+  c.body(DASHBOARD_JS, 200, {
+    "Content-Type": "text/javascript; charset=utf-8",
     "Cache-Control": "public, max-age=300",
   }),
 );

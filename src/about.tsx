@@ -11,7 +11,7 @@ export function About() {
       </head>
       <body>
         <a class="prax-skip" href="#main">Skip to content</a>
-        <main id="main">
+        <main id="main" tabindex={-1}>
           <h1>About Proof</h1>
           <p>
             Proof is a free, open-source results tracker for learning activities: see who did an activity, whether they finished, how they scored, and where they dropped off — without an LMS and without a subscription.

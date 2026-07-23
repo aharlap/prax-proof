@@ -78,6 +78,44 @@ describe("privacy controls", () => {
     expect(await env.DB.prepare("SELECT id FROM learners WHERE identity LIKE '%current-learner'").first()).not.toBeNull();
   });
 
+  it("preserves settings context on validation errors and reviews cleanup before deletion", async () => {
+    const invalid = await SELF.fetch("https://proof.test/dashboard/settings", {
+      method: "POST",
+      headers: {
+        ...ADMIN,
+        Origin: "https://proof.test",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        operatorName: "Preserved operator",
+        privacyUrl: "not-an-absolute-url",
+        privacyContact: "privacy@example.org",
+        regionLabel: "Canada",
+        retentionDays: "90",
+        trackingMode: "notice",
+      }).toString(),
+    });
+    expect(invalid.status).toBe(400);
+    const invalidHtml = await invalid.text();
+    expect(invalidHtml).toContain("Settings not saved");
+    expect(invalidHtml).toContain('value="Preserved operator"');
+    expect(invalidHtml).toContain('id="privacyUrl"');
+    expect(invalidHtml).toContain('aria-invalid="true"');
+    expect(invalidHtml).toContain('data-focus-id="settings-error"');
+
+    const review = await SELF.fetch(
+      "https://proof.test/dashboard/settings/retention/confirm",
+      { headers: ADMIN },
+    );
+    expect(review.status).toBe(200);
+    const reviewHtml = await review.text();
+    expect(reviewHtml).toContain("<h1>Run retention cleanup?</h1>");
+    expect(reviewHtml).toContain("permanently deletes statements");
+    expect(reviewHtml.indexOf("Cancel and return to settings")).toBeLessThan(
+      reviewHtml.indexOf("Permanently delete expired data"),
+    );
+  });
+
   it("exports and deletes a learner through authenticated rights endpoints", async () => {
     const storage = new D1Storage(env.DB);
     const iri = `https://example.org/a/${crypto.randomUUID()}`;

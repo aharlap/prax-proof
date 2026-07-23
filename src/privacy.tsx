@@ -16,7 +16,7 @@ function PrivacyPage(props: { settings: InstanceSettings }) {
       </head>
       <body>
         <a class="prax-skip" href="#main">Skip to content</a>
-        <main id="main">
+        <main id="main" tabindex={-1}>
           <h1>Learning tracking and privacy</h1>
           <p>
             {operator} uses this Proof instance to record participation and results for learning activities.

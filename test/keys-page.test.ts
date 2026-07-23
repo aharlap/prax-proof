@@ -51,7 +51,8 @@ describe("keys page", () => {
     expect(html).toMatch(/[0-9a-f]{64}/);          // one-time secret shown
     expect(html).toContain("Form minted");
     expect(html).toContain('id="minted-key"');
-    expect(html).toContain("<h2>Key created</h2>");
+    expect(html).toContain('<h2 id="minted-key-heading" tabindex="-1">Key created</h2>');
+    expect(html.indexOf("<h1>Keys</h1>")).toBeLessThan(html.indexOf('id="minted-key"'));
     expect(html.indexOf('id="minted-key"')).toBeLessThan(html.indexOf("Activity title"));
     expect(html).toContain("data-key=");            // embed sample
     expect(html).toContain("data-name=");
@@ -102,5 +103,58 @@ describe("keys page", () => {
       body: "label=++",
     });
     expect(res.status).toBe(400);
+  });
+
+  it("re-renders invalid submissions with instructions, values, and an associated error", async () => {
+    const res = await SELF.fetch("https://proof.test/dashboard/keys", {
+      method: "POST",
+      headers: { ...ADMIN, "Content-Type": "application/x-www-form-urlencoded", Origin: "https://proof.test" },
+      body: new URLSearchParams({
+        label: "Preserved title",
+        activitySlug: "Not Valid",
+        kind: "ingest",
+        allowedOrigin: "",
+        identityMode: "anonymous",
+        dailyLimit: "10000",
+      }).toString(),
+    });
+    expect(res.status).toBe(400);
+    const html = await res.text();
+    expect(html).toContain("Key not created");
+    expect(html).toContain('value="Preserved title"');
+    expect(html).toContain('value="Not Valid" aria-invalid="true"');
+    expect(html).toContain('aria-describedby="activitySlug-help key-form-error-message"');
+    expect(html).toContain("Use lowercase letters and numbers separated by single hyphens");
+    expect(html).toContain('data-focus-id="key-form-error"');
+  });
+
+  it("requires a review screen before revoking a specifically named key", async () => {
+    const mint = await SELF.fetch("https://proof.test/admin/keys", {
+      method: "POST",
+      headers: { ...ADMIN, "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "Review target" }),
+    });
+    const key = (await mint.json()) as { id: string };
+    const confirm = await SELF.fetch(
+      `https://proof.test/dashboard/keys/revoke/confirm?id=${encodeURIComponent(key.id)}`,
+      { headers: ADMIN },
+    );
+    expect(confirm.status).toBe(200);
+    const html = await confirm.text();
+    expect(html).toContain("<h1>Revoke this key?</h1>");
+    expect(html).toContain("Review target");
+    expect(html).toContain(key.id.slice(-8));
+    expect(html.indexOf("Cancel and return to keys")).toBeLessThan(
+      html.indexOf("Permanently revoke Review target"),
+    );
+
+    const unconfirmed = await SELF.fetch("https://proof.test/dashboard/keys/revoke", {
+      method: "POST",
+      headers: { ...ADMIN, "Content-Type": "application/x-www-form-urlencoded", Origin: "https://proof.test" },
+      body: new URLSearchParams({ id: key.id }).toString(),
+      redirect: "manual",
+    });
+    expect(unconfirmed.status).toBe(303);
+    expect(unconfirmed.headers.get("Location")).toContain("/dashboard/keys/revoke/confirm");
   });
 });
